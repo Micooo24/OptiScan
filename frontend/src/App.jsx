@@ -10,6 +10,9 @@ import Dashboard from './components/Admin/Dashboard';
 import Home from './Home';
 import ColorBlindResult from './components/Eye_Pages/ColorBlindResult';
 import Users from './components/Admin/Users';
+import EyeConditions from './components/Eye_Pages/Eye_Conditions';
+import About from './components/Eye_Pages/About';
+import Contact from './components/Eye_Pages/Contact';
 
 function App() {
   return (
@@ -19,6 +22,10 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<LandingPage />} />
+        <Route path="/eye-conditions" element={<EyeConditions />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+
 
         {/* USER ROUTES */}
         <Route path="/home" element={<Home />} />
