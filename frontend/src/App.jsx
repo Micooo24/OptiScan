@@ -1,10 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import Login from './components/Auth/Login'; // Adjust the path as needed
+import Login from './components/Auth/Login'; 
 import Register from './components/Auth/Register';
-// import Dashboard from './components/Dashboard';
-import LandingPage from './LandingPage'; // Adjust the path as needed
+import LandingPage from './LandingPage'; 
 import ColorblindTest from './components/Eye_Pages/ColorblindTest';
 import EyeTracking from './components/Eye_Pages/Eye_Tracking';
 import Dashboard from './components/Admin/Dashboard'; 
