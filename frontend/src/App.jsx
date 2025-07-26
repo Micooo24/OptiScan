@@ -1,20 +1,21 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import Login from './components/Auth/Login'; // Adjust the path as needed
+import Login from './components/Auth/Login'; 
 import Register from './components/Auth/Register';
-// import Dashboard from './components/Dashboard';
-import LandingPage from './LandingPage'; // Adjust the path as needed
+import LandingPage from './LandingPage'; 
 import ColorblindTest from './components/Eye_Pages/ColorblindTest';
 import EyeTracking from './components/Eye_Pages/Eye_Tracking';
 import Dashboard from './components/Admin/Dashboard';
 import Home from './Home';
 import ColorBlindResult from './components/Eye_Pages/ColorBlindResult';
-import Users from './components/Admin/Users';
+
+
 function App() {
   return (
     <Router>
       <Routes>
+        {/* Public Routes */}
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
 
@@ -24,6 +25,11 @@ function App() {
         <Route path="/eye-tracking" element={<EyeTracking />} />
         <Route path="/colorblind-test" element={<ColorblindTest />} />
         <Route path="/color-blind-result" element={<ColorBlindResult />} />
+
+
+
+        <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route path="/admin/users" element={<Users />} />
 
 
         <Route path="/admin/dashboard" element={<Dashboard />} />

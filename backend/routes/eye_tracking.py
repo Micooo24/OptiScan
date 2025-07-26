@@ -636,23 +636,17 @@ async def list_user_sessions(current_user: dict = Depends(get_current_user)):
         print(f"Error listing sessions for user {current_user.get('_id', 'unknown')}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Admin route to get all sessions (you can restrict this further if needed)
-@router.get("/admin/sessions")
-async def list_all_sessions(current_user: dict = Depends(get_current_user)):
-    """Get list of all test sessions (admin only - you can add role checking here)"""
+    
+#Get method for admin
+@router.get("/sessions/all")
+async def get_all_eye_test_sessions():
+    """Get all eye test sessions (no authentication)"""
     try:
-        user_id = str(current_user["_id"])
-        print(f"Admin user {user_id} requesting all sessions")
-        
-        # You can add role checking here if you have user roles
         sessions = list(sessions_collection.find())
-        
         return {
-            "sessions": sessions, 
-            "total": len(sessions),
-            "requested_by": user_id
+            "sessions": sessions,
+            "total": len(sessions)
         }
-        
     except Exception as e:
-        print(f"Error listing all sessions for admin {current_user.get('_id', 'unknown')}: {e}")
+        print(f"Error getting all eye test sessions: {e}")
         raise HTTPException(status_code=500, detail=str(e))

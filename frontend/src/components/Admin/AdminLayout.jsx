@@ -66,7 +66,6 @@ const AdminLayout = ({ children, pageTitle = 'Dashboard', initialTab = 'dashboar
     { id: 'users', text: 'Users Management' },
     { id: 'analytics', text: 'Analytics' },
     { id: 'reports', text: 'Reports' },
-    { id: 'settings', text: 'Settings' },
   ];
 
   // Get the current page title based on selected tab or use provided pageTitle

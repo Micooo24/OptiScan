@@ -45,7 +45,7 @@ async def get_user_scans(
         }
         
     except Exception as e:
-        logging.error(f"❌ Failed to fetch user scans: {e}")
+        logging.error(f"Failed to fetch user scans: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch scans: {str(e)}")
 
 @router.get("/scan/{scan_id}")
@@ -85,7 +85,7 @@ async def get_scan_by_id(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"❌ Failed to fetch scan {scan_id}: {e}")
+        logging.error(f"Failed to fetch scan {scan_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch scan: {str(e)}")
 
 @router.get("/latest-scan")
@@ -122,7 +122,7 @@ async def get_latest_scan(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"❌ Failed to fetch latest scan: {e}")
+        logging.error(f"Failed to fetch latest scan: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch latest scan: {str(e)}")
     
 @router.post("/analyze")
@@ -232,9 +232,9 @@ async def analyze_eye_scan(
                     if condition not in left_eye_scores:
                         left_eye_scores[condition] = remaining_prob
             
-            logging.info(f"✅ Left eye analyzed: {left_result.condition.value}")
+            logging.info(f"Left eye analyzed: {left_result.condition.value}")
         except Exception as e:
-            logging.error(f"❌ Left eye analysis failed: {e}")
+            logging.error(f"Left eye analysis failed: {e}")
             scan_data.processing_error = f"Left eye: {str(e)}"
         
         # Process right eye
@@ -266,9 +266,9 @@ async def analyze_eye_scan(
                     if condition not in right_eye_scores:
                         right_eye_scores[condition] = remaining_prob
             
-            logging.info(f"✅ Right eye analyzed: {right_result.condition.value}")
+            logging.info(f"Right eye analyzed: {right_result.condition.value}")
         except Exception as e:
-            logging.error(f"❌ Right eye analysis failed: {e}")
+            logging.error(f"Right eye analysis failed: {e}")
             if scan_data.processing_error:
                 scan_data.processing_error += f" | Right eye: {str(e)}"
             else:
@@ -386,7 +386,7 @@ async def analyze_eye_scan(
         }
         
     except Exception as e:
-        logging.error(f"❌ Eye scan analysis failed: {e}")
+        logging.error(f"Eye scan analysis failed: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @router.get("/health")
@@ -407,3 +407,17 @@ async def health_check():
         "model_info": health_info["model_info"],
         "timestamp": datetime.now(timezone.utc)
     }
+    
+    
+# Get method for admin
+@router.get("/scans/all")
+async def get_admin_scans():
+    """Get all eye scans for admin"""
+    try:
+        scans = eye_scans_collection.find()
+        return {"scans": [scan for scan in scans]}
+    except Exception as e:
+        logging.error(f"Failed to fetch admin scans: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch admin scans: {str(e)}")
+
+    
