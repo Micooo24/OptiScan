@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, File, UploadFile, Form, Request, Depends
+from fastapi import APIRouter, HTTPException, File, UploadFile, Form, Request, Depends, Body
 from fastapi.responses import JSONResponse
 
 # MongoDB and Secret Key
@@ -184,3 +184,75 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         logging.error(f"Error getting current user: {str(e)}")
         raise HTTPException(status_code=500, detail="Error getting user data")
+
+# Get method for admin
+@router.get("/get/all")
+async def get_all_users():
+    """Get all users (no authentication)"""
+    try:
+        users = list(db["users"].find())
+        # Convert ObjectId to string for each user
+        for user in users:
+            user["id"] = str(user["_id"])
+            user.pop("_id", None)
+        return JSONResponse(content={
+            "users": users,
+            "total": len(users)
+        })
+    except Exception as e:
+        logging.error(f"Error getting all users: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error getting all users")
+
+@router.put("/update/{user_id}")
+async def update_user(
+    user_id: str,
+    gender: Optional[str] = Form(None),
+    age: Optional[int] = Form(None),
+    role: Optional[str] = Form(None),
+    img: UploadFile = File(None)
+):
+    """Update user info by user_id, including avatar upload"""
+    try:
+        update_fields = {}
+        if gender:
+            update_fields["gender"] = gender
+        if age:
+            update_fields["age"] = age
+        if role:
+            update_fields["role"] = role
+
+        if img:
+            try:
+                result = cloudinary.uploader.upload(img.file, folder="users")
+                img_url = result.get("secure_url")
+                update_fields["img_path"] = img_url
+            except Exception as e:
+                logger.error(f"Image upload failed: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
+
+        if not update_fields:
+            raise HTTPException(status_code=400, detail="No fields to update")
+
+        result = db["users"].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": update_fields}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"message": "User updated successfully", "user_id": user_id}
+    except Exception as e:
+        logging.error(f"Error updating user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error updating user")
+
+@router.delete("/delete/{user_id}")
+async def delete_user(user_id: str):
+    """Delete user by user_id"""
+    try:
+        result = db["users"].delete_one({"_id": ObjectId(user_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"message": "User deleted successfully", "user_id": user_id}
+    except Exception as e:
+        logging.error(f"Error deleting user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error deleting user")
+    

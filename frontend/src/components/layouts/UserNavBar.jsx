@@ -5,6 +5,13 @@ import BASE_URL from '../../common/baseURL';
 import '../../CSS/LandingPage.css';
 import { useNavigate } from 'react-router-dom';
 
+// Import clinic images
+import recImage from '../../assets/rec.jpeg';
+import stlukeImage from '../../assets/stluke.jpg';
+import mctImage from '../../assets/mct.jpg';
+import asianImage from '../../assets/asian.jpg';
+import aecImage from '../../assets/aec.jpg';
+
 export default function UserNavBar() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -81,7 +88,7 @@ export default function UserNavBar() {
                         <div className="dropdown-content clinic-dropdown-content">
                             <div className="clinic-item">
                                 <div className="clinic-image">
-                                    <img src="/api/placeholder/60/60" alt="REC Clinic" />
+                                    <img src={recImage} alt="REC Clinic" />
                                 </div>
                                 <div className="clinic-details">
                                     <h4>Roque Eye Clinic (REC)</h4>
@@ -94,7 +101,7 @@ export default function UserNavBar() {
 
                             <div className="clinic-item">
                                 <div className="clinic-image">
-                                    <img src="/api/placeholder/60/60" alt="Martinez Eye Clinic" />
+                                    <img src={stlukeImage} alt="Martinez Eye Clinic" />
                                 </div>
                                 <div className="clinic-details">
                                     <h4>Martinez Eye Clinic</h4>
@@ -107,7 +114,7 @@ export default function UserNavBar() {
 
                             <div className="clinic-item">
                                 <div className="clinic-image">
-                                    <img src="/api/placeholder/60/60" alt="Medical Center Taguig" />
+                                    <img src={mctImage} alt="Medical Center Taguig" />
                                 </div>
                                 <div className="clinic-details">
                                     <h4>Medical Center Taguig</h4>
@@ -120,7 +127,7 @@ export default function UserNavBar() {
 
                             <div className="clinic-item">
                                 <div className="clinic-image">
-                                    <img src="/api/placeholder/60/60" alt="Asian Eye Institute" />
+                                    <img src={asianImage} alt="Asian Eye Institute" />
                                 </div>
                                 <div className="clinic-details">
                                     <h4>Asian Eye Institute</h4>
@@ -133,7 +140,7 @@ export default function UserNavBar() {
 
                             <div className="clinic-item">
                                 <div className="clinic-image">
-                                    <img src="/api/placeholder/60/60" alt="American Eye Center" />
+                                    <img src={aecImage} alt="American Eye Center" />
                                 </div>
                                 <div className="clinic-details">
                                     <h4>The American Eye Center</h4>
