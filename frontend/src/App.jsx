@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import Login from './components/Auth/Login'; 
+import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
-import LandingPage from './LandingPage'; 
+import LandingPage from './LandingPage';
 import ColorblindTest from './components/Eye_Pages/ColorblindTest';
 import EyeTracking from './components/Eye_Pages/Eye_Tracking';
 import Dashboard from './components/Admin/Dashboard';
@@ -19,19 +19,18 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<LandingPage />} />
+
+        {/* USER ROUTES */}
         <Route path="/home" element={<Home />} />
         <Route path="/eye-tracking" element={<EyeTracking />} />
         <Route path="/colorblind-test" element={<ColorblindTest />} />
         <Route path="/color-blind-result" element={<ColorBlindResult />} />
 
 
-
-        {/* Admin Routes */}
-
+        {/* ADMIN ROUTES */}
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/users" element={<Users />} />
 
-        <Route path="*" element={<div>404 Not Found</div>} />
       </Routes>
 
       {/* Add Toaster component for global toast notifications */}
