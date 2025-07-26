@@ -4,28 +4,26 @@ html, body, #root {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  background: linear-gradient(135deg, #e0f2fe 0%, #b4c9d7 100%);
 }
 
 body {
   height: 100vh;
   margin: 0;
   padding: 0;
-  background-color: #F4F1EE;
 }
 
 .login-container {
   height: 100vh;
   width: 100vw;
   display: flex;
-  justify-content: center;   /* centers horizontally */
-  align-items: center;       /* centers vertically */
-  /* background-color: #F4F1EE; */
-   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  justify-content: center;
+  align-items: center;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* Remove background here for cleaner look */
 }
-
 .login-form-wrapper {
   background-color: #FFFFFF;
   border-radius: 10px;
