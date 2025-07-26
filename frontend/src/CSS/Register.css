@@ -12,8 +12,7 @@ html, body, #root {
   display: flex;
   justify-content: center;
   align-items: center;
-  /* background-color: #F4F1EE; */
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: linear-gradient(135deg, #e0f2fe 0%, #b4c9d7 100%);
   margin: 0;
   padding: 0;
   box-sizing: border-box;
