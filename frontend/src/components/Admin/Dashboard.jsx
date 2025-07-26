@@ -1,188 +1,464 @@
-import React from 'react';
-import {
-  Box,
-  Grid,
-  Paper,
-  Card,
-  CardContent,
-  Typography,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  LinearProgress,
-  Avatar,
-} from '@mui/material';
-import {
-  TrendingUp as TrendingUpIcon,
-} from '@mui/icons-material';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  Filler
+} from 'chart.js';
+import { Line, Pie, Bar } from 'react-chartjs-2';
+import { toast } from 'react-hot-toast';
+import '../../CSS/Dashboard.css';
 
-function Dashboard() {
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  Filler
+);
 
-  const stats = [
-    { title: 'Total Tests', value: '2,847', change: '+12%', color: '#1976d2' },
-    { title: 'Active Users', value: '1,293', change: '+8%', color: '#26a69a' },
-    { title: 'Success Rate', value: '96.4%', change: '+2.1%', color: '#ff9800' },
-    { title: 'Alerts', value: '23', change: '-5%', color: '#f44336' },
-  ];
+export default function Dashboard() {
+  const [dashboardStats, setDashboardStats] = useState({
+    total_users: 0,
+    total_tests: 0,
+    users_with_possible_disease: 0,
+    average_confidence: 0,
+    test_breakdown: {},
+    disease_breakdown: {},
+    health_percentage: 0,
+    disease_percentage: 0
+  });
 
-  const recentTests = [
-    { id: 1, user: 'John Doe', test: 'Color Blindness', result: 'Normal', time: '2 mins ago' },
-    { id: 2, user: 'Jane Smith', test: 'Eye Tracking', result: 'Abnormal', time: '5 mins ago' },
-    { id: 3, user: 'Mike Johnson', test: 'Pupil Analysis', result: 'Normal', time: '8 mins ago' },
-    { id: 4, user: 'Sarah Wilson', test: 'Color Blindness', result: 'Detected', time: '12 mins ago' },
-  ];
+  const [monthlyData, setMonthlyData] = useState({});
+  const [recentTests, setRecentTests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(8);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch dashboard stats
+      const statsResponse = await fetch('http://localhost:8000/api/admin/stats/dashboard');
+      const statsData = await statsResponse.json();
+      setDashboardStats(statsData);
+
+      // Fetch monthly data
+      const monthlyResponse = await fetch('http://localhost:8000/api/admin/monthly_diseases');
+      const monthlyDataRes = await monthlyResponse.json();
+      setMonthlyData(monthlyDataRes);
+
+      // Fetch recent tests
+      const recentResponse = await fetch('http://localhost:8000/api/admin/recent-tests');
+      const recentData = await recentResponse.json();
+      setRecentTests(recentData);
+
+      setLoading(false);
+      toast.success('Dashboard data loaded successfully');
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+      setLoading(false);
+    }
+  };
+
+  // Filter and sort recent tests
+  const filteredTests = recentTests.filter(test =>
+    test.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    test.test_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    test.result.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const sortedTests = React.useMemo(() => {
+    let sortableTests = [...filteredTests];
+    if (sortConfig.key) {
+      sortableTests.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableTests;
+  }, [filteredTests, sortConfig]);
+
+  // Pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = sortedTests.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedTests.length / itemsPerPage);
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+  const getLineChartData = () => {
+    if (!monthlyData || Object.keys(monthlyData).length === 0) {
+      return { labels: [], datasets: [] };
+    }
+
+    const months = Object.keys(monthlyData.total_normal || {}).sort();
+    const labels = months.map(month => {
+      const date = new Date(month + '-01');
+      return date.toLocaleDateString('en-US', { month: 'short' });
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Normal',
+          data: months.map(month => monthlyData.total_normal?.[month] || 0),
+          borderColor: '#4FC3F7',
+          backgroundColor: 'rgba(79, 195, 247, 0.1)',
+          tension: 0.4,
+          fill: false,
+          pointBackgroundColor: '#4FC3F7',
+          pointBorderColor: '#4FC3F7',
+          pointRadius: 4,
+        },
+        {
+          label: 'Possible Disease',
+          data: months.map(month => monthlyData.eye_tracking_abnormal?.[month] || 0),
+          borderColor: '#81C784',
+          backgroundColor: 'rgba(129, 199, 132, 0.1)',
+          tension: 0.4,
+          fill: false,
+          pointBackgroundColor: '#81C784',
+          pointBorderColor: '#81C784',
+          pointRadius: 4,
+        },
+        {
+          label: 'Colorblind',
+          data: months.map(month => monthlyData.colorblindness_abnormal?.[month] || 0),
+          borderColor: '#FFB74D',
+          backgroundColor: 'rgba(255, 183, 77, 0.1)',
+          tension: 0.4,
+          fill: false,
+          pointBackgroundColor: '#FFB74D',
+          pointBorderColor: '#FFB74D',
+          pointRadius: 4,
+        },
+        {
+          label: 'Abnormal',
+          data: months.map(month => monthlyData.eye_scan_abnormal?.[month] || 0),
+          borderColor: '#F06292',
+          backgroundColor: 'rgba(240, 98, 146, 0.1)',
+          tension: 0.4,
+          fill: false,
+          pointBackgroundColor: '#F06292',
+          pointBorderColor: '#F06292',
+          pointRadius: 4,
+        }
+      ]
+    };
+  };
+
+  const getPieChartData = () => {
+    const diseaseBreakdown = dashboardStats.disease_breakdown || {};
+    const totalNormal = dashboardStats.total_users - dashboardStats.users_with_possible_disease;
+
+    return {
+      labels: ['Normal', 'Possible Disease', 'Colorblind', 'Abnormal Results'],
+      datasets: [{
+        data: [
+          totalNormal,
+          diseaseBreakdown.eye_tracking_abnormal || 0,
+          diseaseBreakdown.colorblindness_abnormal || 0,
+          diseaseBreakdown.eye_scan_abnormal || 0
+        ],
+        backgroundColor: [
+          '#4FC3F7',
+          '#81C784',
+          '#FFB74D',
+          '#64B5F6'
+        ],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    };
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 15,
+          font: {
+            size: 12
+          }
+        }
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0,0,0,0.1)'
+        },
+        ticks: {
+          font: {
+            size: 11
+          }
+        }
+      },
+      x: {
+        grid: {
+          color: 'rgba(0,0,0,0.1)'
+        },
+        ticks: {
+          font: {
+            size: 11
+          }
+        }
+      }
+    },
+    interaction: {
+      mode: 'nearest',
+      axis: 'x',
+      intersect: false
+    }
+  };
+
+  const pieOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          padding: 15,
+          usePointStyle: true,
+          font: {
+            size: 11
+          }
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: function (context) {
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percentage = ((context.parsed * 100) / total).toFixed(1);
+            return `${context.label}: ${context.parsed} (${percentage}%)`;
+          }
+        }
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="dashboard-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading dashboard...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
-    <AdminLayout pageTitle="Dashboard">
-      <Box>
+    <AdminLayout>
+      <div className="dashboard-container">
 
-        <Grid container spacing={3} mb={4}>
-          {stats.map((stat, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <Card elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
-                <CardContent>
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Box>
-                      <Typography color="text.secondary" variant="body2" gutterBottom>
-                        {stat.title}
-                      </Typography>
-                      <Typography variant="h4" fontWeight="bold">
-                        {stat.value}
-                      </Typography>
-                      <Chip
-                        label={stat.change}
-                        size="small"
-                        sx={{
-                          mt: 1,
-                          bgcolor: stat.change.startsWith('+') ? '#e8f5e8' : '#ffeaea',
-                          color: stat.change.startsWith('+') ? '#2e7d32' : '#d32f2f',
-                          fontWeight: 600,
-                        }}
-                      />
-                    </Box>
-                    <Box
-                      sx={{
-                        width: 60,
-                        height: 60,
-                        borderRadius: '50%',
-                        bgcolor: `${stat.color}20`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <TrendingUpIcon sx={{ color: stat.color, fontSize: 30 }} />
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        {/* Main Content */}
+        <div className="dashboard-content">
+          {/* Charts Row */}
+          {/* <div className="charts-row">
+            <div className="chart-card line-chart-card">
+              <div className="chart-header">
+                <h3>Monthly Trends Analysis</h3>
+              </div>
+              <div className="chart-container">
+                <Line data={getLineChartData()} options={chartOptions} />
+              </div>
+            </div>
+            
+            <div className="chart-card pie-chart-card">
+              <div className="chart-header">
+                <h3>Abnormal Results Distribution</h3>
+              </div>
+              <div className="chart-container">
+                <Pie data={getPieChartData()} options={pieOptions} />
+              </div>
+            </div>
+          </div> */}
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Paper elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
-              <Box p={3}>
-                <Typography variant="h6" gutterBottom>
-                  Recent Eye Tests
-                </Typography>
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>User</TableCell>
-                        <TableCell>Test Type</TableCell>
-                        <TableCell>Result</TableCell>
-                        <TableCell>Time</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {recentTests.map((test) => (
-                        <TableRow key={test.id}>
-                          <TableCell>
-                            <Box display="flex" alignItems="center" gap={2}>
-                              <Avatar sx={{ width: 32, height: 32 }}>
-                                {test.user.charAt(0)}
-                              </Avatar>
-                              {test.user}
-                            </Box>
-                          </TableCell>
-                          <TableCell>{test.test}</TableCell>
-                          <TableCell>
-                            <Chip
-                              label={test.result}
-                              size="small"
-                              color={
-                                test.result === 'Normal' ? 'success' :
-                                  test.result === 'Abnormal' ? 'error' : 'warning'
-                              }
-                              variant="outlined"
-                            />
-                          </TableCell>
-                          <TableCell color="text.secondary">{test.time}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            </Paper>
-          </Grid>
+          {/* Stats Cards Row */}
+          <div className="stats-row">
+            <div className="stat-card total-users">
+              <div className="stat-content">
+                <h3>Total Users</h3>
+                <p className="stat-number">{dashboardStats.total_users.toLocaleString()}</p>
+              </div>
+            </div>
 
-          <Grid item xs={12} md={4}>
-            <Paper elevation={0} sx={{ border: '1px solid #e0e0e0', p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                System Health
-              </Typography>
-              <Box mt={3}>
-                <Box mb={2}>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography variant="body2">Server Performance</Typography>
-                    <Typography variant="body2" color="text.secondary">92%</Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={92}
-                    sx={{ height: 8, borderRadius: 5 }}
+            <div className="stat-card total-tests">
+              <div className="stat-content">
+                <h3>Total Tests</h3>
+                <p className="stat-number">{dashboardStats.total_tests.toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="stat-card users-disease">
+              <div className="stat-content">
+                <h3>Users w. Disease</h3>
+                <p className="stat-number">{dashboardStats.users_with_possible_disease.toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="stat-card average-confidence">
+              <div className="stat-content">
+                <h3>Average Confidence</h3>
+                <p className="stat-number">{dashboardStats.average_confidence}%</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Row */}
+          <div className="charts-row">
+            <div className="chart-card line-chart-card">
+              <div className="chart-header">
+                <h3>Monthly Trends Analysis</h3>
+              </div>
+              <div className="chart-container">
+                <Line data={getLineChartData()} options={chartOptions} />
+              </div>
+            </div>
+
+            <div className="chart-card pie-chart-card">
+              <div className="chart-header">
+                <h3>Abnormal Results Distribution</h3>
+              </div>
+              <div className="chart-container">
+                <Pie data={getPieChartData()} options={pieOptions} />
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Tests Table */}
+          {/* <div className="table-section">
+            <div className="table-header">
+              <h2>Recent Test Results</h2>
+              <div className="table-controls">
+                <div className="search-container">
+                  <input
+                    type="text"
+                    placeholder="Search tests..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="search-input"
                   />
-                </Box>
-                <Box mb={2}>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography variant="body2">Database Health</Typography>
-                    <Typography variant="body2" color="text.secondary">88%</Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={88}
-                    sx={{ height: 8, borderRadius: 5 }}
-                    color="secondary"
-                  />
-                </Box>
-                <Box>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography variant="body2">API Response</Typography>
-                    <Typography variant="body2" color="text.secondary">95%</Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={95}
-                    sx={{ height: 8, borderRadius: 5 }}
-                    color="success"
-                  />
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
-      </Box>
+                  <span className="search-icon">🔍</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="table-container">
+              <table className="recent-tests-table">
+                <thead>
+                  <tr>
+                    <th onClick={() => handleSort('email')} className="sortable">
+                      Email {sortConfig.key === 'email' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th onClick={() => handleSort('test_type')} className="sortable">
+                      Test Type {sortConfig.key === 'test_type' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th onClick={() => handleSort('result')} className="sortable">
+                      Result {sortConfig.key === 'result' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th onClick={() => handleSort('date')} className="sortable">
+                      Date {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentItems.map((test, index) => (
+                    <tr key={index}>
+                      <td>{test.email}</td>
+                      <td>{test.test_type}</td>
+                      <td>
+                        <span className={`result-badge ${test.result.toLowerCase().replace(/\s+/g, '-')}`}>
+                          {test.result}
+                        </span>
+                      </td>
+                      <td>{formatDate(test.date)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="pagination">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="pagination-btn"
+              >
+                Previous
+              </button>
+
+              <div className="pagination-info">
+                Page {currentPage} of {totalPages} ({sortedTests.length} total tests)
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="pagination-btn"
+              >
+                Next
+              </button>
+            </div>
+          </div> */}
+        </div>
+
+
+      </div>
     </AdminLayout>
   );
 }
-
-export default Dashboard;
