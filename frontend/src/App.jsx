@@ -10,7 +10,7 @@ import EyeTracking from './components/Eye_Pages/Eye_Tracking';
 import Dashboard from './components/Admin/Dashboard'; 
 import Home from './Home';
 import ColorBlindResult from './components/Eye_Pages/ColorBlindResult';
-import Users from './components/Admin/Users'; // Adjust the path as needed
+
 
 function App() {
   return (
@@ -27,7 +27,6 @@ function App() {
 
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<Dashboard />} />
-        <Route path="/admin/users" element={<Users />} />
 
         <Route path="*" element={<div>404 Not Found</div>} />
       </Routes>
