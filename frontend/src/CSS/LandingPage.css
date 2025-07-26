@@ -618,3 +618,9 @@ body {
         font-size: 11px;
     }
 }
+
+
+@keyframes eyeBounce {
+  0%, 100% { transform: translateY(0);}
+  50% { transform: translateY(-12px);}
+}
