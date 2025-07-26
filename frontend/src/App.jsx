@@ -9,7 +9,7 @@ import EyeTracking from './components/Eye_Pages/Eye_Tracking';
 import Dashboard from './components/Admin/Dashboard';
 import Home from './Home';
 import ColorBlindResult from './components/Eye_Pages/ColorBlindResult';
-
+import Users from './components/Admin/Users';
 
 function App() {
   return (
