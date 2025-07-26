@@ -18,8 +18,6 @@ function App() {
         {/* Public Routes */}
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-
-
         <Route path="/" element={<LandingPage />} />
         <Route path="/home" element={<Home />} />
         <Route path="/eye-tracking" element={<EyeTracking />} />
@@ -28,9 +26,7 @@ function App() {
 
 
 
-        <Route path="/admin/dashboard" element={<Dashboard />} />
-        <Route path="/admin/users" element={<Users />} />
-
+        {/* Admin Routes */}
 
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/users" element={<Users />} />
