@@ -7,28 +7,31 @@ import Register from './components/Auth/Register';
 import LandingPage from './LandingPage'; // Adjust the path as needed
 import ColorblindTest from './components/Eye_Pages/ColorblindTest';
 import EyeTracking from './components/Eye_Pages/Eye_Tracking';
-import Dashboard from './components/Admin/Dashboard'; 
+import Dashboard from './components/Admin/Dashboard';
 import Home from './Home';
 import ColorBlindResult from './components/Eye_Pages/ColorBlindResult';
-
+import Users from './components/Admin/Users';
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        {/* <Route path="/dashboard" element={<Dashboard />} /> */}
-        <Route path="/" element={<LandingPage />} /> 
+
+
+        <Route path="/" element={<LandingPage />} />
         <Route path="/home" element={<Home />} />
         <Route path="/eye-tracking" element={<EyeTracking />} />
         <Route path="/colorblind-test" element={<ColorblindTest />} />
-        <Route path="/admin/dashboard" element={<Dashboard />} />
-
         <Route path="/color-blind-result" element={<ColorBlindResult />} />
+
+
+        <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route path="/admin/users" element={<Users />} />
 
         <Route path="*" element={<div>404 Not Found</div>} />
       </Routes>
-      
+
       {/* Add Toaster component for global toast notifications */}
       <Toaster
         position="top-right"

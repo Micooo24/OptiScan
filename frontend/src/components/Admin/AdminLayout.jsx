@@ -63,7 +63,7 @@ const AdminLayout = ({ children, pageTitle = 'Dashboard', initialTab = 'dashboar
   const menuItems = [
     { id: 'dashboard', text: 'Dashboard' },
     { id: 'eye-tests', text: 'Eye Tests' },
-    { id: 'users', text: 'Users' },
+    { id: 'users', text: 'Users Management' },
     { id: 'analytics', text: 'Analytics' },
     { id: 'reports', text: 'Reports' },
     { id: 'settings', text: 'Settings' },

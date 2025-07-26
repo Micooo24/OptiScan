@@ -184,3 +184,4 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         logging.error(f"Error getting current user: {str(e)}")
         raise HTTPException(status_code=500, detail="Error getting user data")
+    

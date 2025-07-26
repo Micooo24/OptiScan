@@ -39,7 +39,7 @@ function Dashboard() {
 
   return (
     <AdminLayout pageTitle="Dashboard">
-      {/* <Box>
+      <Box>
 
         <Grid container spacing={3} mb={4}>
           {stats.map((stat, index) => (
@@ -180,7 +180,7 @@ function Dashboard() {
             </Paper>
           </Grid>
         </Grid>
-      </Box> */}
+      </Box>
     </AdminLayout>
   );
 }
