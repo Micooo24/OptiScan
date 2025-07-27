@@ -184,4 +184,67 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         logging.error(f"Error getting current user: {str(e)}")
         raise HTTPException(status_code=500, detail="Error getting user data")
-    
+
+
+@router.put("/me/update")
+async def update_profile(
+    username: str = Form(None),
+    age: int = Form(None),
+    gender: str = Form(None),
+    img: UploadFile = File(None),
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        user_id = current_user["_id"]
+        update_data = {}
+
+        # Username update and uniqueness check
+        if username:
+            if db["users"].find_one({"username": username, "_id": {"$ne": user_id}}):
+                raise HTTPException(status_code=400, detail="Username already taken")
+            update_data["username"] = username
+
+        # Age update and validation
+        if age is not None:
+            if age < 1 or age > 150:
+                raise HTTPException(status_code=400, detail="Age must be between 1 and 150")
+            update_data["age"] = age
+
+        # Gender update and validation
+        if gender:
+            if gender not in [g.value for g in Gender]:
+                raise HTTPException(status_code=400, detail="Invalid gender. Must be 'male' or 'female'")
+            update_data["gender"] = gender
+
+        # Image upload
+        if img:
+            try:
+                result = cloudinary.uploader.upload(img.file, folder="users")
+                img_url = result.get("secure_url")
+                update_data["img_path"] = img_url
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
+
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No data to update")
+
+        db["users"].update_one({"_id": user_id}, {"$set": update_data})
+        user = db["users"].find_one({"_id": user_id})
+
+        return JSONResponse(content={
+            "message": "Profile updated successfully",
+            "user": {
+                "id": str(user["_id"]),
+                "username": user["username"],
+                "age": user.get("age"),
+                "email": user["email"],
+                "img_path": user.get("img_path"),
+                "gender": user.get("gender"),
+                "role": user["role"],
+                "created_at": str(user.get("created_at"))
+            }
+             })
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred during profile update: {str(e)}")

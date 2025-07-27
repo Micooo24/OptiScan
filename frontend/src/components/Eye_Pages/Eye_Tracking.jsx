@@ -595,9 +595,9 @@ export default function EyeTrackingAnalysis() {
         <div className="header-section">
           <div className="title-area">
             <h1>Eye Analysis</h1>
-            <p>Professional eye tracking assessment</p>
+            <p>Monitor your eye health with advanced AI analysis</p>
             {authToken && (
-              <span className="auth-status">🔒 Authenticated Session</span>
+              <span className="auth-status"> Authenticated Session</span>
             )}
           </div>
 
