@@ -30,10 +30,10 @@ const tests = [
     img: eyeDiseaseImg,
     desc: "Using AI, this test analyzes fundus images or iris scans taken from your mobile device to detect early signs of diabetic retinopathy, glaucoma, macular degeneration, and cataracts. The system provides risk assessments and recommendations for further clinical evaluation, supporting proactive eye health management.",
     route: null,
-    btnText: "Coming Soon"
+    btnText: "Via React Native App"
   }
 ];
-// ...existing imports and code...
+
 
 export default function Home() {
   const [user, setUser] = useState(null);
