@@ -144,8 +144,8 @@ function LandingPage() {
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button href="/" sx={{ color: '#333', fontWeight: 500 }}>Home</Button>
-            <Button href="/eye-conditions" sx={{ color: '#333', fontWeight: 500 }}>Eye Conditions</Button>
+            <Button href="/login" sx={{ color: '#333', fontWeight: 500 }}>Home</Button>
+            <Button href="/login" sx={{ color: '#333', fontWeight: 500 }}>Eye Conditions</Button>
             <Button href="/about" sx={{ color: '#333', fontWeight: 500 }}>About</Button>
             <Button href="/contact" sx={{ color: '#333', fontWeight: 500 }}>Contact</Button>
           </Box>

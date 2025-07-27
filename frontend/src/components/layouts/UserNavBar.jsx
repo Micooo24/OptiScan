@@ -179,7 +179,7 @@ export default function UserNavBar() {
                 ))}
               </Menu>
             </Box>
-            <Button href="/contact" sx={{ color: '#333', fontWeight: 500 }}>History</Button>
+            <Button href="/" sx={{ color: '#333', fontWeight: 500 }}>History</Button>
           </Box>
           {/* Auth Buttons */}
           <Box>
