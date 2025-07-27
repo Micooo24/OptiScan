@@ -160,41 +160,56 @@ async def get_dashboard_stats():
         eye_scans_count = db["eye_scans"].count_documents({})
         total_tests = colorblindness_tests_count + eye_test_sessions_count + eye_scans_count
 
-        # 3. Count users with possible diseases (non-normal results)
+        # 3. Disease breakdown and abnormal test counts (Moved this up to be used for normal_tests)
+        disease_breakdown = {
+            "colorblindness_abnormal": db["colorblindness_tests"].count_documents({"suspected_type": {"$ne": "normal"}}),
+            "eye_tracking_abnormal": db["eye_test_sessions"].count_documents({"final_status": {"$ne": "NORMAL"}}),
+            "eye_scan_abnormal": db["eye_scans"].count_documents({
+                "$or": [
+                    {"left_eye_analysis.condition": {"$ne": "NORMAL"}},
+                    {"right_eye_analysis.condition": {"$ne": "NORMAL"}}
+                ]
+            }),
+            "total_abnormal_tests": (
+                db["colorblindness_tests"].count_documents({"suspected_type": {"$ne": "normal"}}) +
+                db["eye_test_sessions"].count_documents({"final_status": {"$ne": "NORMAL"}}) +
+                db["eye_scans"].count_documents({
+                    "$or": [
+                        {"left_eye_analysis.condition": {"$ne": "NORMAL"}},
+                        {"right_eye_analysis.condition": {"$ne": "NORMAL"}}
+                    ]
+                })
+            )
+        }
+
+        # 4. Calculate normal tests
+        normal_tests = total_tests - disease_breakdown["total_abnormal_tests"]
+
+        # 5. Count users with possible diseases (non-normal results)
         users_with_disease = set()
         
         # From colorblindness tests - users with non-normal suspected_type
-        colorblind_users = db["colorblindness_tests"].find(
-            {"suspected_type": {"$ne": "normal"}}, 
-            {"user_id": 1}
-        )
-        for test in colorblind_users:
-            users_with_disease.add(str(test["user_id"]))
+        colorblind_users = db["colorblindness_tests"].distinct("user_id", {"suspected_type": {"$ne": "normal"}})
+        users_with_disease.update(map(str, colorblind_users))
 
         # From eye test sessions - users with non-normal final_status
-        eye_test_users = db["eye_test_sessions"].find(
-            {"final_status": {"$ne": "NORMAL"}}, 
-            {"user_id": 1}
-        )
-        for session in eye_test_users:
-            if "user_id" in session:
-                users_with_disease.add(str(session["user_id"]))
+        eye_test_users = db["eye_test_sessions"].distinct("user_id", {"final_status": {"$ne": "NORMAL"}})
+        users_with_disease.update(map(str, eye_test_users))
 
         # From eye scans - users with non-normal conditions in either eye
-        eye_scan_users = db["eye_scans"].find({
+        eye_scan_users = db["eye_scans"].distinct("user_id", {
             "$or": [
                 {"left_eye_analysis.condition": {"$ne": "NORMAL"}},
                 {"right_eye_analysis.condition": {"$ne": "NORMAL"}}
             ]
-        }, {"user_id": 1})
-        for scan in eye_scan_users:
-            users_with_disease.add(str(scan["user_id"]))
+        })
+        users_with_disease.update(map(str, eye_scan_users))
 
         users_with_disease_count = len(users_with_disease)
 
-        # 4. Calculate average confidence across all tests
+        # 6. Calculate average confidence across all tests
         confidence_scores = []
-        
+
         # Colorblindness test confidences
         colorblind_confidences = db["colorblindness_tests"].find({}, {"confidence": 1})
         for test in colorblind_confidences:
@@ -230,49 +245,34 @@ async def get_dashboard_stats():
         # Calculate overall average confidence
         average_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0.0
 
-        # Additional breakdown for more detailed insights
+        # 7. Additional breakdown for more detailed insights
         test_breakdown = {
             "colorblindness_tests": colorblindness_tests_count,
             "eye_test_sessions": eye_test_sessions_count,
             "eye_scans": eye_scans_count
         }
 
-        # Disease distribution by test type
-        disease_breakdown = {
-            "colorblindness_abnormal": db["colorblindness_tests"].count_documents({"suspected_type": {"$ne": "normal"}}),
-            "eye_tracking_abnormal": db["eye_test_sessions"].count_documents({"final_status": {"$ne": "NORMAL"}}),
-            "eye_scan_abnormal": db["eye_scans"].count_documents({
-                "$or": [
-                    {"left_eye_analysis.condition": {"$ne": "NORMAL"}},
-                    {"right_eye_analysis.condition": {"$ne": "NORMAL"}}
-                ]
-            }),
-            "total_abnormal_tests": (
-                db["colorblindness_tests"].count_documents({"suspected_type": {"$ne": "normal"}}) +
-                db["eye_test_sessions"].count_documents({"final_status": {"$ne": "NORMAL"}}) +
-                db["eye_scans"].count_documents({
-                    "$or": [
-                        {"left_eye_analysis.condition": {"$ne": "NORMAL"}},
-                        {"right_eye_analysis.condition": {"$ne": "NORMAL"}}
-                    ]
-                })
-            )
-        }
+        # 8. Health and disease percentages
+        health_percentage = round(((total_users - users_with_disease_count) / total_users * 100), 2) if total_users > 0 else 0
+        disease_percentage = round((users_with_disease_count / total_users * 100), 2) if total_users > 0 else 0
 
+        # Return response
         return JSONResponse(content={
             "total_users": total_users,
             "total_tests": total_tests,
             "users_with_possible_disease": disease_breakdown["total_abnormal_tests"],
+            "normal_tests": normal_tests,
             "average_confidence": round(average_confidence, 2),
             "test_breakdown": test_breakdown,
             "disease_breakdown": disease_breakdown,
-            "health_percentage": round(((total_users - users_with_disease_count) / total_users * 100), 2) if total_users > 0 else 0,
-            "disease_percentage": round((users_with_disease_count / total_users * 100), 2) if total_users > 0 else 0
+            "health_percentage": health_percentage,
+            "disease_percentage": disease_percentage
         })
 
     except Exception as e:
         logger.error(f"Error getting dashboard stats: {str(e)}")
         raise HTTPException(status_code=500, detail="Error fetching dashboard statistics")
+
 
 async def get_user_email(user_id: ObjectId) -> str:
     user = db["users"].find_one({"_id": user_id})
@@ -419,3 +419,7 @@ async def get_monthly_diseases():
     except Exception as e:
         logger.error(f"Error getting monthly disease stats: {str(e)}")
         raise HTTPException(status_code=500, detail="Error fetching monthly disease statistics")
+
+
+
+# Eye Tests Data

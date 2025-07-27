@@ -1,0 +1,362 @@
+/* EyeTests.css */
+.eye-tests-container {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding: 2rem;
+  overflow: auto; /* Allow scrolling if content overflows */
+  box-sizing: border-box; /* Includes padding in width/height calculations */
+}
+
+.eye-tests-loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  color: #64748b;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Header */
+.eye-tests-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.eye-tests-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.period-selector {
+  display: flex;
+  background: white;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.period-selector button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.period-selector button.active {
+  background: #8b5cf6;
+  color: white;
+}
+
+.period-selector button:hover:not(.active) {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+/* Main Content */
+.eye-tests-content {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 2rem;
+  height: auto; /* Ensure content area grows dynamically */
+  overflow: visible; /* Make sure content can overflow as needed */
+}
+
+/* Chart Section */
+.chart-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+}
+
+.chart-container {
+  flex: 1;
+  position: relative;
+  margin-bottom: 2rem;
+  min-height: 300px;
+  max-height: 100%;
+}
+
+.chart-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.5rem;
+}
+
+.current-month {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.current-month .amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.current-month .percentage {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.current-month p {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.percentage.positive {
+  color: #10b981;
+}
+
+.percentage.negative {
+  color: #ef4444;
+}
+
+.comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.this-year,
+.previous-year {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.indicator.purple {
+  background: #8b5cf6;
+}
+
+.indicator.green {
+  background: #10b981;
+}
+
+.this-year .amount,
+.previous-year .amount {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-height: 100%;
+}
+
+/* Stats Cards */
+.stats-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: right;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #8b5cf6;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Bottom Sections */
+.bottom-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow: visible; /* Allow bottom sections to grow and overflow as necessary */
+}
+
+.packages-section,
+.overview-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: visible; /* Allow content to overflow if needed */
+}
+
+.packages-section h3,
+.overview-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+}
+
+/* Package List */
+.package-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.package-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.package-item:last-child {
+  border-bottom: none;
+}
+
+.package-name {
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.package-count {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .eye-tests-content {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  
+  .sidebar {
+    grid-row: 1;
+  }
+  
+  .chart-section {
+    grid-row: 2;
+  }
+  
+  .stats-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+  
+  .bottom-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .eye-tests-container {
+    padding: 1rem;
+  }
+  
+  .eye-tests-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .eye-tests-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .period-selector {
+    justify-content: center;
+  }
+  
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .bottom-sections {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-stats {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .comparison {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .stat-number {
+    font-size: 1.75rem;
+  }
+  
+  .chart-section {
+    padding: 1rem;
+  }
+  
+  .packages-section,
+  .overview-section {
+    padding: 1rem;
+  }
+}

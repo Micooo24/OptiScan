@@ -13,6 +13,7 @@ import Users from './components/Admin/Users';
 import EyeConditions from './components/Eye_Pages/Eye_Conditions';
 import About from './components/Eye_Pages/About';
 import Contact from './components/Eye_Pages/Contact';
+import EyeTests from './components/Admin/EyeTests';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         {/* ADMIN ROUTES */}
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/users" element={<Users />} />
+        <Route path="/admin/eye-tests" element={<EyeTests />} />
 
       </Routes>
 

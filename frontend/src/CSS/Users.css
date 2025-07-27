@@ -1,64 +1,10 @@
-/* Users.css */
-.users-container {
-  padding: 2rem;
-  background-color: #f8fafc;
-  min-height: 100vh;
-}
-
-.users-header {
-  margin-bottom: 2rem;
-}
-
-.users-header h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #1a202c;
-  margin-bottom: 1rem;
-}
-
-.stats-summary {
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
-
-.stat-card {
-  background: linear-gradient(135deg, #4ECDC4, #44A08D);
-  padding: 1.5rem;
-  border-radius: 16px;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 150px;
-  box-shadow: 0 8px 25px rgba(78, 205, 196, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 35px rgba(78, 205, 196, 0.4);
-}
-
-.stat-number {
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin-bottom: 0.5rem;
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  opacity: 0.9;
-  text-align: center;
-}
-
 /* Charts Section */
 .charts-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   margin-bottom: 3rem;
-  height: 100vh;
+  height: auto; /* Ensure that the height can grow based on content */
 }
 
 .chart-card {
@@ -76,8 +22,7 @@
 }
 
 .chart-card.full-width {
-  grid-column: 1 / -1;
-  /* height: 100vh; */
+  grid-column: 1 / -1; /* Ensures the chart card takes up the entire width */
 }
 
 .chart-card h3 {
@@ -100,6 +45,7 @@
   padding: 2rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   border: 1px solid #e2e8f0;
+  overflow: hidden; /* Prevents overflow of content */
 }
 
 .table-header {
