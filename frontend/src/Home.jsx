@@ -6,24 +6,28 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Container, Box, Typography, Paper, Button, Grid, Card, CardContent, CardMedia } from '@mui/material';
 
+import eyeTrackImg from './assets/eye_track.png';
+import colorBlindImg from './assets/color_blind.png';
+import eyeDiseaseImg from './assets/eye_disease.png'
+
 const tests = [
   {
     name: "Eye Tracking",
-    img: "https://via.placeholder.com/120x80?text=Eye+Tracking",
+    img: eyeTrackImg,
     desc: "This test monitors your pupil dilation and eye movement patterns to help detect neurological issues, drug reactions, and fatigue. By analyzing how your eyes respond to visual stimuli, the system can provide insights into your cognitive health and alertness.",
     route: "/eye-tracking",
     btnText: "Go to Eye Tracking"
   },
   {
     name: "Color Blindness Test",
-    img: "https://via.placeholder.com/120x80?text=Color+Blindness",
+    img: colorBlindImg,
     desc: "This test identifies specific color vision deficiencies such as protanopia, deuteranopia, and tritanopia. The system uses advanced color plates and AI analysis to precisely type your color vision status, helping you understand how you perceive colors compared to others.",
     route: "/colorblind-test",
     btnText: "Go to Color Blindness Test"
   },
   {
     name: "Eye Prediction Test (Mobile)",
-    img: "https://via.placeholder.com/120x80?text=Eye+Prediction",
+    img: eyeDiseaseImg,
     desc: "Using AI, this test analyzes fundus images or iris scans taken from your mobile device to detect early signs of diabetic retinopathy, glaucoma, macular degeneration, and cataracts. The system provides risk assessments and recommendations for further clinical evaluation, supporting proactive eye health management.",
     route: null,
     btnText: "Coming Soon"

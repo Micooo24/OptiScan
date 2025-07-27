@@ -179,7 +179,6 @@ export default function UserNavBar() {
                 ))}
               </Menu>
             </Box>
-            <Button href="/" sx={{ color: '#333', fontWeight: 500 }}>History</Button>
           </Box>
           {/* Auth Buttons */}
           <Box>

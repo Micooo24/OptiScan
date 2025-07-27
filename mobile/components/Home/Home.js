@@ -46,7 +46,6 @@ export default function Home({ navigation }) {
     const menuItems = [
       { icon: 'home', label: 'Home', screen: 'Home' },
       { icon: 'camera', label: 'Eye Scan', screen: 'EyeScan' },
-      { icon: 'account-circle', label: 'Profile', screen: 'Profile' },
     ];
 
     const openSidebar = () => {
