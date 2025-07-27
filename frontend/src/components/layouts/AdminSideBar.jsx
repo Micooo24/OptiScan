@@ -39,9 +39,9 @@ const AdminSideBar = ({
     { id: 'dashboard', text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
     { id: 'eye-tests', text: 'Eye Tests', icon: <EyeIcon />, path: '/admin/eye-tests' },
     { id: 'users', text: 'Users', icon: <PeopleIcon />, path: '/admin/users' },
-    { id: 'analytics', text: 'Analytics', icon: <AnalyticsIcon />, path: '/admin/analytics' },
-    { id: 'reports', text: 'Reports', icon: <ReportIcon />, path: '/admin/reports' },
-    { id: 'settings', text: 'Settings', icon: <SettingsIcon />, path: '/admin/settings' },
+    // { id: 'analytics', text: 'Analytics', icon: <AnalyticsIcon />, path: '/admin/analytics' },
+    // { id: 'reports', text: 'Reports', icon: <ReportIcon />, path: '/admin/reports' },
+    // { id: 'settings', text: 'Settings', icon: <SettingsIcon />, path: '/admin/settings' },
   ];
 
   useEffect(() => {
