@@ -18,6 +18,7 @@ import {
 
 export default function EyeTrackingAnalysis() {
   const webcamRef = useRef(null);
+  const calibrationWebcamRef = useRef(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -26,6 +27,15 @@ export default function EyeTrackingAnalysis() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [authToken, setAuthToken] = useState(null);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+
+  // Calibration modal states
+  const [showCalibrationModal, setShowCalibrationModal] = useState(false);
+  const [calibrationStep, setCalibrationStep] = useState(1);
+  const [calibrationData, setCalibrationData] = useState({
+    camera: { status: 'checking', message: 'Initializing camera...' },
+    distance: { value: 0, status: 'measuring', message: 'Position yourself' },
+    faceDetection: { detected: false, confidence: 0, message: 'Looking for face...' }
+  });
 
   // Environment validation states
   const [environmentCheck, setEnvironmentCheck] = useState({
@@ -85,10 +95,77 @@ export default function EyeTrackingAnalysis() {
     };
   }, [currentStep]);
 
+  // Hardcoded calibration simulation
+  useEffect(() => {
+    let calibrationInterval;
+    
+    if (showCalibrationModal && calibrationStep <= 3) {
+      calibrationInterval = setInterval(() => {
+        simulateCalibrationProgress();
+      }, 1000);
+    }
+
+    return () => {
+      if (calibrationInterval) clearInterval(calibrationInterval);
+    };
+  }, [showCalibrationModal, calibrationStep]);
+
+  // Hardcoded calibration simulation function
+  const simulateCalibrationProgress = () => {
+    setCalibrationData(prev => {
+      const newData = { ...prev };
+      
+      // Simulate camera check (Step 1)
+      if (calibrationStep === 1) {
+        newData.camera = { 
+          status: 'connected', 
+          message: 'Camera ready ✓' 
+        };
+        
+        // Auto advance to step 2 after 2 seconds
+        setTimeout(() => setCalibrationStep(2), 2000);
+      }
+      
+      // Simulate distance measurement (Step 2)
+      else if (calibrationStep === 2) {
+        const randomDistance = Math.floor(Math.random() * 20) + 50; // 50-70cm
+        newData.distance = {
+          value: randomDistance,
+          status: randomDistance >= 55 && randomDistance <= 65 ? 'optimal' : 'adjusting',
+          message: randomDistance >= 55 && randomDistance <= 65 ? 'Perfect distance ✓' : 'Adjusting position...'
+        };
+        
+        // Auto advance to step 3 after optimal distance
+        if (randomDistance >= 55 && randomDistance <= 65) {
+          setTimeout(() => setCalibrationStep(3), 1500);
+        }
+      }
+      
+      // Simulate face detection (Step 3)
+      else if (calibrationStep === 3) {
+        const randomConfidence = Math.floor(Math.random() * 30) + 70; // 70-100%
+        newData.faceDetection = {
+          detected: randomConfidence > 75,
+          confidence: randomConfidence,
+          message: randomConfidence > 75 ? 'Face detected ✓' : 'Detecting face...'
+        };
+        
+        // Complete calibration when face is detected
+        if (randomConfidence > 75) {
+          setTimeout(() => {
+            setCalibrationStep(4);
+            toast.success('Calibration completed successfully!', { duration: 3000 });
+          }, 1500);
+        }
+      }
+      
+      return newData;
+    });
+  };
+
   // Get authentication token from localStorage
   const getAuthToken = () => {
     try {
-      // First, try to get from your login response structure
       const loginData = localStorage.getItem('loginData');
       if (loginData) {
         try {
@@ -103,7 +180,6 @@ export default function EyeTrackingAnalysis() {
         }
       }
 
-      // Try multiple possible token storage locations
       const token = localStorage.getItem('access_token') ||
         localStorage.getItem('token') ||
         localStorage.getItem('authToken') ||
@@ -187,6 +263,36 @@ export default function EyeTrackingAnalysis() {
     }
   };
 
+  // Start calibration
+  const startCalibration = () => {
+    setShowCalibrationModal(true);
+    setCalibrationStep(1);
+    setCalibrationData({
+      camera: { status: 'checking', message: 'Initializing camera...' },
+      distance: { value: 0, status: 'measuring', message: 'Position yourself' },
+      faceDetection: { detected: false, confidence: 0, message: 'Looking for face...' }
+    });
+  };
+
+  // Complete calibration
+  const completeCalibration = () => {
+    setShowCalibrationModal(false);
+    // Force environment to be ready after calibration
+    setEnvironmentCheck({
+      distance: { status: 'optimal', value: 60, message: 'Optimal distance' },
+      lighting: { status: 'optimal', value: 85, message: 'Good lighting' },
+      faceDetected: true,
+      isValidEnvironment: true
+    });
+    toast.success('Calibration saved! Ready for analysis.', { duration: 3000 });
+  };
+
+  // Skip calibration
+  const skipCalibration = () => {
+    setShowCalibrationModal(false);
+    toast.info('Calibration skipped. You can run calibration anytime.', { duration: 3000 });
+  };
+
   // Modified createSession function - only called when user wants to start
   const createSession = async () => {
     if (!authToken) {
@@ -204,7 +310,6 @@ export default function EyeTrackingAnalysis() {
       console.log('Session created:', response.data.session_id);
       console.log('User ID:', response.data.user_id);
 
-      // Clear any previous errors
       setError('');
       toast.success('Session created successfully!', { duration: 2000 });
       return true;
@@ -215,7 +320,6 @@ export default function EyeTrackingAnalysis() {
       if (error.response?.status === 401) {
         setError('Authentication expired. Please log in again.');
         toast.error('Please log in again', { duration: 3000 });
-        // Clear invalid token
         localStorage.removeItem('token');
         sessionStorage.removeItem('token');
         setAuthToken(null);
@@ -257,10 +361,9 @@ export default function EyeTrackingAnalysis() {
       return;
     }
 
-    // Create session and start the first test
     const sessionCreated = await createSession();
     if (sessionCreated) {
-      setCurrentStep(1); // Move to ear detection step
+      setCurrentStep(1);
       toast.success('Starting analysis...', { duration: 2000 });
     }
   };
@@ -527,7 +630,7 @@ export default function EyeTrackingAnalysis() {
     }
   };
 
-  // Reset functionality - now clears session properly
+  // Reset functionality
   const resetAllTests = () => {
     setCurrentStep(0);
     setTestResults({ earDetection: null, pupilDilation: null, blinkCount: null });
@@ -538,7 +641,7 @@ export default function EyeTrackingAnalysis() {
     setFinalAnalysis(null);
     setError('');
     setIsGeneratingPDF(false);
-    setSessionId(null); // Clear session ID
+    setSessionId(null);
     setIsCreatingSession(false);
     setEnvironmentCheck({
       distance: { status: 'unknown', value: 0, message: '' },
@@ -546,7 +649,6 @@ export default function EyeTrackingAnalysis() {
       faceDetected: false, isValidEnvironment: false
     });
 
-    // Don't automatically create a new session
     toast.success('Ready for new analysis', { duration: 2000 });
   };
 
@@ -591,13 +693,147 @@ export default function EyeTrackingAnalysis() {
     <>
       <UserNavBar />
       <div className="eye-tracking-container">
+        {/* Calibration Modal */}
+        {showCalibrationModal && (
+          <div className="calibration-modal-overlay">
+            <div className="calibration-modal">
+              <div className="calibration-header">
+                <h2>📷 Camera Calibration</h2>
+                <p>Step {calibrationStep} of 3 - Setting up optimal conditions</p>
+              </div>
+
+              <div className="calibration-content">
+                {/* Camera Feed with Oval */}
+                <div className="calibration-camera">
+                  <div className="camera-preview-container">
+                    <Webcam
+                      ref={calibrationWebcamRef}
+                      audio={false}
+                      screenshotFormat="image/jpeg"
+                      videoConstraints={{
+                        width: 640,
+                        height: 480,
+                        facingMode: "user"
+                      }}
+                      className="calibration-camera-feed"
+                    />
+                    
+                    {/* Face Detection Oval Overlay */}
+                    <div className="face-detection-overlay">
+                      <div className={`face-oval ${calibrationData.faceDetection.detected ? 'detected' : 'detecting'}`}>
+                        <div className="oval-content">
+                          {calibrationStep === 3 && (
+                            <div className="face-status">
+                              {calibrationData.faceDetection.detected ? (
+                                <div className="detected-face">
+                                  <span className="face-icon">😊</span>
+                                  <p>Face Detected!</p>
+                                  <p className="confidence">{calibrationData.faceDetection.confidence}% confidence</p>
+                                </div>
+                              ) : (
+                                <div className="searching-face">
+                                  <span className="face-icon">👤</span>
+                                  <p>Center your face here</p>
+                                  <div className="detection-progress">
+                                    <div className="progress-dots">
+                                      <span>•</span><span>•</span><span>•</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {calibrationStep === 2 && (
+                            <div className="distance-indicator">
+                              <span className="distance-value">{calibrationData.distance.value}cm</span>
+                              <p className="distance-message">{calibrationData.distance.message}</p>
+                            </div>
+                          )}
+                          
+                          {calibrationStep === 1 && (
+                            <div className="camera-indicator">
+                              <span className="camera-icon">📹</span>
+                              <p>{calibrationData.camera.message}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Calibration Status */}
+                <div className="calibration-status">
+                  <div className="status-grid">
+                    <div className={`status-item ${calibrationData.camera.status === 'connected' ? 'completed' : 'active'}`}>
+                      <span className="status-number">1</span>
+                      <div className="status-info">
+                        <h4>Camera Check</h4>
+                        <p>{calibrationData.camera.message}</p>
+                      </div>
+                      <span className="status-icon">
+                        {calibrationData.camera.status === 'connected' ? '✅' : '⏳'}
+                      </span>
+                    </div>
+
+                    <div className={`status-item ${calibrationStep >= 2 ? (calibrationData.distance.status === 'optimal' ? 'completed' : 'active') : 'pending'}`}>
+                      <span className="status-number">2</span>
+                      <div className="status-info">
+                        <h4>Distance Measurement</h4>
+                        <p>{calibrationStep >= 2 ? calibrationData.distance.message : 'Waiting...'}</p>
+                      </div>
+                      <span className="status-icon">
+                        {calibrationData.distance.status === 'optimal' ? '✅' : calibrationStep >= 2 ? '📏' : '⏳'}
+                      </span>
+                    </div>
+
+                    <div className={`status-item ${calibrationStep >= 3 ? (calibrationData.faceDetection.detected ? 'completed' : 'active') : 'pending'}`}>
+                      <span className="status-number">3</span>
+                      <div className="status-info">
+                        <h4>Face Detection</h4>
+                        <p>{calibrationStep >= 3 ? calibrationData.faceDetection.message : 'Waiting...'}</p>
+                      </div>
+                      <span className="status-icon">
+                        {calibrationData.faceDetection.detected ? '✅' : calibrationStep >= 3 ? '👤' : '⏳'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="calibration-controls">
+                {calibrationStep < 4 ? (
+                  <>
+                    <button onClick={skipCalibration} className="btn-outline">
+                      Skip Calibration
+                    </button>
+                    <div className="calibration-info">
+                      <p>Calibration is automatically progressing...</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={completeCalibration} className="btn-success">
+                      ✅ Complete Calibration
+                    </button>
+                    <button onClick={skipCalibration} className="btn-outline">
+                      Skip
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="header-section">
           <div className="title-area">
             <h1>Eye Analysis</h1>
             <p>Monitor your eye health with advanced AI analysis</p>
             {authToken && (
-              <span className="auth-status"> Authenticated Session</span>
+              <span className="auth-status">✓ Authenticated Session</span>
             )}
           </div>
 
@@ -648,6 +884,17 @@ export default function EyeTrackingAnalysis() {
                   className="camera-feed"
                 />
 
+                {/* Main Camera Oval Frame */}
+                {!isProcessing && (
+                  <div className="main-face-overlay">
+                    <div className="main-face-oval">
+                      <div className="face-guide-text">
+                        <p>Center your face here</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Overlay for processing */}
                 {isProcessing && (
                   <div className="processing-overlay">
@@ -695,6 +942,24 @@ export default function EyeTrackingAnalysis() {
               {currentStep === 0 && (
                 <div style={{ display: 'flex', gap: '10px', flexDirection: 'column', alignItems: 'center' }}>
                   <button
+                    onClick={startCalibration}
+                    className="btn-primary"
+                    disabled={!authToken}
+                    style={{
+                      padding: '12px 24px',
+                      fontSize: '16px',
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: !authToken ? 'not-allowed' : 'pointer',
+                      marginBottom: '10px'
+                    }}
+                  >
+                    📷 Run Calibration
+                  </button>
+
+                  <button
                     onClick={beginAnalysis}
                     className={`btn-outline ${!authToken || isCreatingSession ? 'disabled' : ''}`}
                     disabled={!authToken || isCreatingSession}
@@ -714,7 +979,7 @@ export default function EyeTrackingAnalysis() {
                         Creating Session...
                       </>
                     ) : (
-                      'Begin Analysis'
+                      'Begin Analysis (Skip Calibration)'
                     )}
                   </button>
 

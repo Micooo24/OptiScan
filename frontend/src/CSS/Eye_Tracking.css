@@ -687,3 +687,416 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Calibration Modal Styles */
+.calibration-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.calibration-modal {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.calibration-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.calibration-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.calibration-header p {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.calibration-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.calibration-camera {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.camera-preview-container {
+  position: relative;
+  width: 480px;
+  height: 360px;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #000;
+}
+
+.calibration-camera-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Face Detection Oval */
+.face-detection-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.face-oval {
+  width: 280px;
+  height: 320px;
+  border: 4px solid #3b82f6;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.1);
+  transition: all 0.3s ease;
+  animation: ovalPulse 2s ease-in-out infinite;
+}
+
+.face-oval.detected {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  animation: ovalSuccess 1s ease-in-out;
+}
+
+@keyframes ovalPulse {
+  0%, 100% {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 20px rgba(59, 130, 246, 0);
+  }
+}
+
+@keyframes ovalSuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.oval-content {
+  text-align: center;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.face-status .face-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.face-status p {
+  margin: 0.25rem 0;
+  font-weight: 600;
+}
+
+.confidence {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.detection-progress {
+  margin-top: 1rem;
+}
+
+.progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.progress-dots span {
+  font-size: 1.5rem;
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+.progress-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.progress-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotPulse {
+  0%, 60%, 100% { opacity: 0.3; }
+  30% { opacity: 1; }
+}
+
+.distance-indicator {
+  text-align: center;
+}
+
+.distance-value {
+  font-size: 3rem;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.distance-message {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.camera-indicator {
+  text-align: center;
+}
+
+.camera-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* Calibration Status Grid */
+.calibration-status {
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.status-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  border-left: 4px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.status-item.active {
+  border-left-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.status-item.completed {
+  border-left-color: #10b981;
+  background: #ecfdf5;
+}
+
+.status-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: #e5e7eb;
+  color: #6b7280;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.status-item.active .status-number {
+  background: #3b82f6;
+  color: white;
+}
+
+.status-item.completed .status-number {
+  background: #10b981;
+  color: white;
+}
+
+.status-info {
+  flex: 1;
+}
+
+.status-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.status-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.status-icon {
+  font-size: 1.25rem;
+}
+
+/* Calibration Controls */
+.calibration-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.calibration-info {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.calibration-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Main Camera Oval Frame */
+.main-face-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.main-face-oval {
+  width: 200px;
+  height: 250px;
+  border: 3px solid #3b82f6;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.05);
+  animation: mainOvalPulse 3s ease-in-out infinite;
+}
+
+@keyframes mainOvalPulse {
+  0%, 100% {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
+  }
+}
+
+.face-guide-text {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+
+.face-guide-text p {
+  margin: 0;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .calibration-modal {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .camera-preview-container {
+    width: 100%;
+    max-width: 400px;
+    height: 300px;
+  }
+  
+  .face-oval {
+    width: 220px;
+    height: 260px;
+  }
+  
+  .main-face-oval {
+    width: 160px;
+    height: 200px;
+  }
+  
+  .status-grid {
+    gap: 0.75rem;
+  }
+  
+  .status-item {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .calibration-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .face-oval {
+    width: 180px;
+    height: 220px;
+  }
+  
+  .main-face-oval {
+    width: 140px;
+    height: 180px;
+  }
+  
+  .face-status .face-icon {
+    font-size: 2rem;
+  }
+  
+  .distance-value {
+    font-size: 2rem;
+  }
+}
