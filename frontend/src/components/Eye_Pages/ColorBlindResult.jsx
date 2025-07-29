@@ -385,46 +385,46 @@ const ColorBlindResult = () => {
                         </button>
                     </div>
 
-                    {showDetailedResults && (
-                        <div className="result-table-wrapper">
-                            <table className="result-table">
-                                <thead>
-                                    <tr>
-                                        <th>PLATE NO.</th>
-                                        <th>IMAGE</th>
-                                        <th>CORRECT</th>
-                                        <th>YOUR ANSWER</th>
-                                        <th>RESULT</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {testResult.plates.map((plate, index) => (
-                                        <tr key={index}>
-                                            <td>{plate.plate_number}</td>
-                                            <td>
-                                                {plate.image_url ? (
-                                                    <img
-                                                        src={plate.image_url}
-                                                        alt={`Plate ${plate.plate_number}`}
-                                                        style={{ width: '50px', height: '50px', borderRadius: '50%' }}
-                                                    />
-                                                ) : (
-                                                    'No Image'
-                                                )}
-                                            </td>
-                                            <td>{plate.correct_answer}</td>
-                                            <td>{plate.user_answer || 'No Answer'}</td>
-                                            <td>
-                                                <span className={`result-badge ${plate.is_correct ? 'badge-correct' : 'badge-incorrect'}`}>
-                                                    {plate.is_correct ? 'CORRECT' : 'INCORRECT'}
-                                                </span>
-                                            </td>
+                        {showDetailedResults && (
+                            <div className="result-table-wrapper">
+                                <table className="result-table">
+                                    <thead>
+                                        <tr>
+                                            <th>PLATE NO.</th>
+                                            <th>IMAGE</th>
+                                            <th>CORRECT</th>
+                                            <th>YOUR ANSWER</th>
+                                            <th>RESULT</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    </thead>
+                                    <tbody>
+                                        {testResult.plates.map((plate, index) => (
+                                            <tr key={index}>
+                                                <td style={{color: 'black'}}>{plate.plate_number}</td>
+                                                <td>
+                                                    {plate.image_url ? (
+                                                        <img
+                                                            src={plate.image_url}
+                                                            alt={`Plate ${plate.plate_number}`}
+                                                            style={{ width: '50px', height: '50px', borderRadius: '50%' }}
+                                                        />
+                                                    ) : (
+                                                        <span style={{color: 'black'}}>No Image</span>
+                                                    )}
+                                                </td>
+                                                <td style={{color: 'black'}}>{plate.correct_answer}</td>
+                                                <td style={{color: 'black'}}>{plate.user_answer || 'No Answer'}</td>
+                                                <td>
+                                                    <span className={`result-badge ${plate.is_correct ? 'badge-correct' : 'badge-incorrect'}`}>
+                                                        {plate.is_correct ? 'CORRECT' : 'INCORRECT'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
 
                     <div className="colorblind-info">
                         <h4>What do these results mean?</h4>

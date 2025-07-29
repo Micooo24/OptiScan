@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AdminLayout from './AdminLayout';
 import '../../CSS/users.css';
 
@@ -18,6 +18,7 @@ import {
 } from 'chart.js';
 import { Line, Pie, Bar } from 'react-chartjs-2';
 import { toast } from 'react-hot-toast';
+import { jsPDF } from 'jspdf';
 
 ChartJS.register(
     CategoryScale,
@@ -47,6 +48,13 @@ export default function Users() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [generatingPDF, setGeneratingPDF] = useState(false);
+
+    // Chart refs
+    const testsOverviewRef = useRef(null);
+    const genderDistributionRef = useRef(null);
+    const ageDistributionRef = useRef(null);
+    const registrationTrendRef = useRef(null);
 
     const [editFormData, setEditFormData] = useState({
         username: '',
@@ -89,6 +97,206 @@ export default function Users() {
         } catch (error) {
             console.error('Error fetching stats:', error);
         }
+    };
+
+    const generateChartsPDF = async () => {
+        try {
+            setGeneratingPDF(true);
+            toast.loading('Generating OptiScan User Charts PDF report...');
+
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFontSize(24);
+            doc.setTextColor(0, 123, 255);
+            doc.text('OptiScan User Charts', 105, 20, { align: 'center' });
+            
+            // Date
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 30, { align: 'center' });
+
+            let yPosition = 50;
+
+            // Function to capture chart as image
+            const captureChart = (chartRef, title) => {
+                return new Promise((resolve) => {
+                    if (chartRef.current) {
+                        const canvas = chartRef.current.canvas;
+                        const imgData = canvas.toDataURL('image/png');
+                        resolve({ imgData, title });
+                    } else {
+                        resolve(null);
+                    }
+                });
+            };
+
+            // Add user summary statistics first
+            doc.setFontSize(16);
+            doc.setTextColor(0, 0, 0);
+            doc.text('User Analytics Summary', 20, yPosition);
+            yPosition += 20;
+
+            doc.setFontSize(12);
+            doc.text(`Total Users: ${users.length}`, 20, yPosition);
+            yPosition += 10;
+            doc.text(`Male Users: ${stats.pie_chart.male || 0}`, 20, yPosition);
+            yPosition += 10;
+            doc.text(`Female Users: ${stats.pie_chart.female || 0}`, 20, yPosition);
+            yPosition += 10;
+            doc.text(`Total Tests Conducted: ${(stats.area_chart.colorblindness_tests || 0) + (stats.area_chart.eye_test_sessions || 0) + (stats.area_chart.eye_scans || 0)}`, 20, yPosition);
+            yPosition += 20;
+
+            // Capture all charts
+            const chartPromises = [
+                captureChart(testsOverviewRef, 'Tests Overview'),
+                captureChart(genderDistributionRef, 'Gender Distribution'),
+                captureChart(ageDistributionRef, 'Age Distribution'),
+                captureChart(registrationTrendRef, 'User Registration Trend')
+            ];
+
+            const chartImages = await Promise.all(chartPromises);
+
+            // Add charts to PDF
+            for (let i = 0; i < chartImages.length; i++) {
+                const chart = chartImages[i];
+                if (chart && chart.imgData) {
+                    // Add new page for each chart
+                    doc.addPage();
+                    yPosition = 20;
+
+                    // Chart title
+                    doc.setFontSize(16);
+                    doc.setTextColor(0, 0, 0);
+                    doc.text(chart.title, 105, yPosition, { align: 'center' });
+                    
+                    // Chart image
+                    const imgWidth = 170;
+                    const imgHeight = 100;
+                    const xPosition = (doc.internal.pageSize.getWidth() - imgWidth) / 2;
+                    
+                    doc.addImage(chart.imgData, 'PNG', xPosition, yPosition + 10, imgWidth, imgHeight);
+
+                    // Add statistics below chart
+                    yPosition += 130;
+                    doc.setFontSize(12);
+                    doc.text('Analysis:', 20, yPosition);
+                    yPosition += 10;
+
+                    if (i === 0) { // Tests Overview
+                        doc.setFontSize(10);
+                        doc.text(`• Colorblindness Tests: ${stats.area_chart.colorblindness_tests || 0}`, 30, yPosition);
+                        yPosition += 8;
+                        doc.text(`• Eye Test Sessions: ${stats.area_chart.eye_test_sessions || 0}`, 30, yPosition);
+                        yPosition += 8;
+                        doc.text(`• Eye Scans: ${stats.area_chart.eye_scans || 0}`, 30, yPosition);
+                        yPosition += 8;
+                        doc.text(`• Total Test Count: ${(stats.area_chart.colorblindness_tests || 0) + (stats.area_chart.eye_test_sessions || 0) + (stats.area_chart.eye_scans || 0)}`, 30, yPosition);
+                    } else if (i === 1) { // Gender Distribution
+                        const totalUsers = (stats.pie_chart.male || 0) + (stats.pie_chart.female || 0);
+                        const malePercentage = totalUsers > 0 ? ((stats.pie_chart.male || 0) / totalUsers * 100).toFixed(1) : 0;
+                        const femalePercentage = totalUsers > 0 ? ((stats.pie_chart.female || 0) / totalUsers * 100).toFixed(1) : 0;
+                        
+                        doc.text(`• Male Users: ${stats.pie_chart.male || 0} (${malePercentage}%)`, 30, yPosition);
+                        yPosition += 8;
+                        doc.text(`• Female Users: ${stats.pie_chart.female || 0} (${femalePercentage}%)`, 30, yPosition);
+                        yPosition += 8;
+                        doc.text(`• Total Users: ${totalUsers}`, 30, yPosition);
+                        yPosition += 8;
+                        doc.text(`• Gender Distribution: ${malePercentage}% male, ${femalePercentage}% female`, 30, yPosition);
+                    } else if (i === 2) { // Age Distribution
+                        const ageGroups = [
+                            { label: '18-25', count: users.filter(user => user.age >= 18 && user.age <= 25).length },
+                            { label: '26-35', count: users.filter(user => user.age >= 26 && user.age <= 35).length },
+                            { label: '36-45', count: users.filter(user => user.age >= 36 && user.age <= 45).length },
+                            { label: '46-60', count: users.filter(user => user.age >= 46 && user.age <= 60).length },
+                            { label: '60+', count: users.filter(user => user.age > 60).length }
+                        ];
+                        ageGroups.forEach((group, index) => {
+                            const percentage = users.length > 0 ? ((group.count / users.length) * 100).toFixed(1) : 0;
+                            doc.text(`• ${group.label} years: ${group.count} users (${percentage}%)`, 30, yPosition + (index * 8));
+                        });
+                        yPosition += 32;
+                        const avgAge = users.length > 0 ? (users.reduce((sum, user) => sum + (user.age || 0), 0) / users.length).toFixed(1) : 0;
+                        doc.text(`• Average Age: ${avgAge} years`, 30, yPosition);
+                    } else if (i === 3) { // Registration Trend
+                        doc.text(`• Total Registered Users: ${users.length}`, 30, yPosition);
+                        yPosition += 8;
+                        doc.text(`• Registration Trend: ${stats.line_chart.length} months tracked`, 30, yPosition);
+                        yPosition += 8;
+                        if (stats.line_chart.length > 0) {
+                            const latestMonth = stats.line_chart[stats.line_chart.length - 1];
+                            doc.text(`• Latest Month Activity: ${latestMonth.user_count} registrations`, 30, yPosition);
+                        }
+                    }
+                }
+            }
+
+            // Add insights page
+            doc.addPage();
+            yPosition = 20;
+
+            doc.setFontSize(16);
+            doc.text('Key Insights & Demographics', 105, yPosition, { align: 'center' });
+            yPosition += 20;
+
+            doc.setFontSize(14);
+            doc.text('User Demographics:', 20, yPosition);
+            yPosition += 15;
+
+            doc.setFontSize(11);
+            const insights = [
+                `Total registered users: ${users.length}`,
+                `Gender ratio: ${stats.pie_chart.male || 0} male, ${stats.pie_chart.female || 0} female`,
+                `Most active age group: ${getMostActiveAgeGroup()}`,
+                `Total eye tests performed: ${(stats.area_chart.colorblindness_tests || 0) + (stats.area_chart.eye_test_sessions || 0) + (stats.area_chart.eye_scans || 0)}`,
+                `User engagement: ${getEngagementRate()}% users have taken tests`
+            ];
+
+            insights.forEach(insight => {
+                doc.text(`• ${insight}`, 30, yPosition);
+                yPosition += 10;
+            });
+
+            // Footer on all pages
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+                doc.text('OptiScan User Charts', 105, 285, { align: 'center' });
+            }
+
+            // Save PDF
+            const fileName = `optiscan-user-charts-${new Date().getTime()}.pdf`;
+            doc.save(fileName);
+
+            toast.success('PDF report generated successfully!');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            toast.error('Error generating PDF report');
+        } finally {
+            setGeneratingPDF(false);
+        }
+    };
+
+    const getMostActiveAgeGroup = () => {
+        const ageGroups = [
+            { label: '18-25', count: users.filter(user => user.age >= 18 && user.age <= 25).length },
+            { label: '26-35', count: users.filter(user => user.age >= 26 && user.age <= 35).length },
+            { label: '36-45', count: users.filter(user => user.age >= 36 && user.age <= 45).length },
+            { label: '46-60', count: users.filter(user => user.age >= 46 && user.age <= 60).length },
+            { label: '60+', count: users.filter(user => user.age > 60).length }
+        ];
+        
+        const mostActive = ageGroups.reduce((max, group) => group.count > max.count ? group : max);
+        return `${mostActive.label} (${mostActive.count} users)`;
+    };
+
+    const getEngagementRate = () => {
+        const totalTests = (stats.area_chart.colorblindness_tests || 0) + (stats.area_chart.eye_test_sessions || 0) + (stats.area_chart.eye_scans || 0);
+        return users.length > 0 ? ((totalTests / users.length) * 100).toFixed(1) : 0;
     };
 
     // Filter and sort users
@@ -248,6 +456,38 @@ export default function Users() {
         ]
     };
 
+    // Age distribution chart
+    const ageDistributionData = {
+        labels: ['18-25', '26-35', '36-45', '46-60', '60+'],
+        datasets: [
+            {
+                label: 'Age Groups',
+                data: [
+                    users.filter(user => user.age >= 18 && user.age <= 25).length,
+                    users.filter(user => user.age >= 26 && user.age <= 35).length,
+                    users.filter(user => user.age >= 36 && user.age <= 45).length,
+                    users.filter(user => user.age >= 46 && user.age <= 60).length,
+                    users.filter(user => user.age > 60).length
+                ],
+                backgroundColor: [
+                    'rgba(78, 205, 196, 0.8)',
+                    'rgba(149, 225, 211, 0.8)',
+                    'rgba(78, 205, 196, 0.6)',
+                    'rgba(149, 225, 211, 0.6)',
+                    'rgba(78, 205, 196, 0.4)'
+                ],
+                borderColor: [
+                    '#4ECDC4',
+                    '#95E1D3',
+                    '#4ECDC4',
+                    '#95E1D3',
+                    '#4ECDC4'
+                ],
+                borderWidth: 2
+            }
+        ]
+    };
+
     const areaChartData = {
         labels: ['Colorblindness Tests', 'Eye Test Sessions', 'Eye Scans'],
         datasets: [
@@ -328,6 +568,46 @@ export default function Users() {
         }
     };
 
+    const barOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    padding: 20,
+                    font: {
+                        size: 12,
+                        family: 'Inter, sans-serif'
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: false
+                },
+                ticks: {
+                    font: {
+                        size: 11
+                    }
+                }
+            },
+            y: {
+                grid: {
+                    color: '#f0f0f0'
+                },
+                ticks: {
+                    font: {
+                        size: 11
+                    },
+                    stepSize: 1
+                }
+            }
+        }
+    };
+
     if (loading) {
         return (
             <AdminLayout>
@@ -341,28 +621,202 @@ export default function Users() {
     return (
         <AdminLayout>
             <div className="users-container">
-              
+                {/* Header with PDF Export */}
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '30px',
+                    padding: '20px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '12px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                }}>
+                    <h1 style={{
+                        margin: 0,
+                        fontSize: '32px',
+                        fontWeight: '700',
+                        color: '#2c3e50',
+                        letterSpacing: '-0.5px'
+                    }}>User Analytics</h1>
+                    <button
+                        onClick={generateChartsPDF}
+                        disabled={generatingPDF}
+                        style={{
+                            backgroundColor: generatingPDF ? '#b0b0b0' : '#4ECDC4',
+                            color: 'white',
+                            border: 'none',
+                            padding: '12px 24px',
+                            borderRadius: '8px',
+                            cursor: generatingPDF ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'all 0.3s ease',
+                            boxShadow: generatingPDF ? 'none' : '0 2px 8px rgba(78, 205, 196, 0.3)',
+                            minWidth: 'fit-content',
+                            height: '44px'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!generatingPDF) {
+                                e.target.style.backgroundColor = '#45B7B8';
+                                e.target.style.transform = 'translateY(-1px)';
+                                e.target.style.boxShadow = '0 4px 12px rgba(78, 205, 196, 0.4)';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!generatingPDF) {
+                                e.target.style.backgroundColor = '#4ECDC4';
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = '0 2px 8px rgba(78, 205, 196, 0.3)';
+                            }
+                        }}
+                    >
+                        <span style={{ fontSize: '16px' }}>
+                            {generatingPDF ? '⏳' : '📊'}
+                        </span>
+                        {generatingPDF ? 'Generating PDF...' : 'Export Charts to PDF'}
+                    </button>
+                </div>
 
-                {/* Charts Section */}
+                {/* Charts Section - Updated to match Dashboard/Eye Tests layout */}
                 <div className="charts-section">
-                    <div className="chart-card">
-                        <h3>Tests Overview</h3>
-                        <div className="chart-container">
-                            <Line key="area-chart" data={areaChartData} options={chartOptions} />
+                    {/* Charts Row - Single row with wider charts like Dashboard */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '30px',
+                        marginBottom: '40px'
+                    }}>
+                        {/* Tests Overview Chart - Full width like Dashboard line chart */}
+                        <div className="chart-card" style={{
+                            backgroundColor: 'white',
+                            borderRadius: '12px',
+                            padding: '20px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid #e9ecef',
+                            gridColumn: '1 / -1'
+                        }}>
+                            <div className="chart-header" style={{
+                                marginBottom: '20px',
+                                textAlign: 'center'
+                            }}>
+                                <h3 style={{
+                                    margin: 0,
+                                    fontSize: '18px',
+                                    fontWeight: '600',
+                                    color: '#2c3e50'
+                                }}>Tests Overview</h3>
+                            </div>
+                            <div className="chart-container" style={{ height: '350px' }}>
+                                <Line 
+                                    ref={testsOverviewRef} 
+                                    key="area-chart" 
+                                    data={areaChartData} 
+                                    options={chartOptions} 
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="chart-card">
-                        <h3>Gender Distribution</h3>
-                        <div className="chart-container">
-                            <Pie key="pie-chart" data={pieChartData} options={pieOptions} />
+                    {/* Second Row - 2 charts side by side */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '30px',
+                        marginBottom: '40px'
+                    }}>
+                        <div className="chart-card" style={{
+                            backgroundColor: 'white',
+                            borderRadius: '12px',
+                            padding: '20px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid #e9ecef'
+                        }}>
+                            <div className="chart-header" style={{
+                                marginBottom: '20px',
+                                textAlign: 'center'
+                            }}>
+                                <h3 style={{
+                                    margin: 0,
+                                    fontSize: '18px',
+                                    fontWeight: '600',
+                                    color: '#2c3e50'
+                                }}>Gender Distribution</h3>
+                            </div>
+                            <div className="chart-container" style={{ height: '350px' }}>
+                                <Pie 
+                                    ref={genderDistributionRef} 
+                                    key="pie-chart" 
+                                    data={pieChartData} 
+                                    options={pieOptions} 
+                                />
+                            </div>
+                        </div>
+
+                        <div className="chart-card" style={{
+                            backgroundColor: 'white',
+                            borderRadius: '12px',
+                            padding: '20px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid #e9ecef'
+                        }}>
+                            <div className="chart-header" style={{
+                                marginBottom: '20px',
+                                textAlign: 'center'
+                            }}>
+                                <h3 style={{
+                                    margin: 0,
+                                    fontSize: '18px',
+                                    fontWeight: '600',
+                                    color: '#2c3e50'
+                                }}>Age Distribution</h3>
+                            </div>
+                            <div className="chart-container" style={{ height: '350px' }}>
+                                <Bar 
+                                    ref={ageDistributionRef} 
+                                    key="age-chart" 
+                                    data={ageDistributionData} 
+                                    options={barOptions} 
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="chart-card full-width">
-                        <h3>User Registration Trend</h3>
-                        <div className="chart-container">
-                            <Line key="line-chart" data={lineChartData} options={chartOptions} />
+                    {/* Third Row - Single chart full width */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr',
+                        marginBottom: '40px'
+                    }}>
+                        <div className="chart-card" style={{
+                            backgroundColor: 'white',
+                            borderRadius: '12px',
+                            padding: '20px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid #e9ecef'
+                        }}>
+                            <div className="chart-header" style={{
+                                marginBottom: '20px',
+                                textAlign: 'center'
+                            }}>
+                                <h3 style={{
+                                    margin: 0,
+                                    fontSize: '18px',
+                                    fontWeight: '600',
+                                    color: '#2c3e50'
+                                }}>User Registration Trend</h3>
+                            </div>
+                            <div className="chart-container" style={{ height: '350px' }}>
+                                <Line 
+                                    ref={registrationTrendRef} 
+                                    key="line-chart" 
+                                    data={lineChartData} 
+                                    options={chartOptions} 
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -506,6 +960,7 @@ export default function Users() {
                                             value={editFormData.username}
                                             onChange={handleInputChange}
                                             required
+                                            style={{ color: 'black', backgroundColor: 'white' }}
                                         />
                                     </div>
                                     <div className="form-group">
@@ -516,6 +971,7 @@ export default function Users() {
                                             value={editFormData.email}
                                             onChange={handleInputChange}
                                             required
+                                            style={{ color: 'black', backgroundColor: 'white' }}
                                         />
                                     </div>
                                     <div className="form-group">
@@ -528,6 +984,7 @@ export default function Users() {
                                             min="1"
                                             max="150"
                                             required
+                                            style={{ color: 'black', backgroundColor: 'white' }}
                                         />
                                     </div>
                                     <div className="form-group">
@@ -536,6 +993,7 @@ export default function Users() {
                                             name="gender"
                                             value={editFormData.gender}
                                             onChange={handleInputChange}
+                                            style={{ color: 'black', backgroundColor: 'white' }}
                                         >
                                             <option value="">Select Gender</option>
                                             <option value="male">Male</option>

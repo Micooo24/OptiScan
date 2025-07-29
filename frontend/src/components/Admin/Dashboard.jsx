@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AdminLayout from './AdminLayout';
 import {
   Chart as ChartJS,
@@ -15,6 +15,7 @@ import {
 } from 'chart.js';
 import { Line, Pie, Bar } from 'react-chartjs-2';
 import { toast } from 'react-hot-toast';
+import { jsPDF } from 'jspdf';
 import '../../CSS/Dashboard.css';
 
 ChartJS.register(
@@ -49,6 +50,11 @@ export default function Dashboard() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
+
+  // Chart refs for PDF export
+  const lineChartRef = useRef(null);
+  const pieChartRef = useRef(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -81,6 +87,254 @@ export default function Dashboard() {
       toast.error('Failed to load dashboard data');
       setLoading(false);
     }
+  };
+
+  const generateDashboardPDF = async () => {
+    try {
+      setGeneratingPDF(true);
+      toast.loading('Generating OptiScan Dashboard Analytics PDF...');
+
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFontSize(24);
+      doc.setTextColor(0, 123, 255);
+      doc.text('OptiScan Dashboard Analytics', 105, 20, { align: 'center' });
+      
+      // Date
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 30, { align: 'center' });
+
+      let yPosition = 50;
+
+      // Function to capture chart as image
+      const captureChart = (chartRef, title) => {
+        return new Promise((resolve) => {
+          if (chartRef.current) {
+            const canvas = chartRef.current.canvas;
+            const imgData = canvas.toDataURL('image/png');
+            resolve({ imgData, title });
+          } else {
+            resolve(null);
+          }
+        });
+      };
+
+      // Add dashboard summary statistics
+      doc.setFontSize(16);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Dashboard Overview', 20, yPosition);
+      yPosition += 20;
+
+      doc.setFontSize(12);
+      doc.text(`Total Users: ${dashboardStats.total_users.toLocaleString()}`, 20, yPosition);
+      yPosition += 10;
+      doc.text(`Total Tests Conducted: ${dashboardStats.total_tests.toLocaleString()}`, 20, yPosition);
+      yPosition += 10;
+      doc.text(`Users with Possible Disease: ${dashboardStats.users_with_possible_disease.toLocaleString()}`, 20, yPosition);
+      yPosition += 10;
+      doc.text(`Average Confidence Level: ${dashboardStats.average_confidence}%`, 20, yPosition);
+      yPosition += 20;
+
+      // Test breakdown section
+      if (dashboardStats.test_breakdown) {
+        doc.setFontSize(14);
+        doc.text('Test Breakdown:', 20, yPosition);
+        yPosition += 15;
+        
+        doc.setFontSize(11);
+        const testBreakdown = dashboardStats.test_breakdown;
+        doc.text(`• Colorblindness Tests: ${testBreakdown.colorblindness_tests || 0}`, 30, yPosition);
+        yPosition += 8;
+        doc.text(`• Eye Test Sessions: ${testBreakdown.eye_test_sessions || 0}`, 30, yPosition);
+        yPosition += 8;
+        doc.text(`• Eye Scans: ${testBreakdown.eye_scans || 0}`, 30, yPosition);
+        yPosition += 15;
+      }
+
+      // Disease breakdown section
+      if (dashboardStats.disease_breakdown) {
+        doc.setFontSize(14);
+        doc.text('Disease Detection Summary:', 20, yPosition);
+        yPosition += 15;
+        
+        doc.setFontSize(11);
+        const diseaseBreakdown = dashboardStats.disease_breakdown;
+        doc.text(`• Colorblindness Abnormal: ${diseaseBreakdown.colorblindness_abnormal || 0}`, 30, yPosition);
+        yPosition += 8;
+        doc.text(`• Eye Tracking Abnormal: ${diseaseBreakdown.eye_tracking_abnormal || 0}`, 30, yPosition);
+        yPosition += 8;
+        doc.text(`• Eye Scan Abnormal: ${diseaseBreakdown.eye_scan_abnormal || 0}`, 30, yPosition);
+        yPosition += 8;
+        doc.text(`• Total Abnormal Tests: ${diseaseBreakdown.total_abnormal_tests || 0}`, 30, yPosition);
+        yPosition += 20;
+      }
+
+      // Capture and add line chart
+      if (lineChartRef.current) {
+        const lineChart = await captureChart(lineChartRef, 'Monthly Trends Analysis');
+        
+        if (lineChart && lineChart.imgData) {
+          // Add new page for line chart
+          doc.addPage();
+          yPosition = 20;
+
+          // Chart title
+          doc.setFontSize(16);
+          doc.setTextColor(0, 0, 0);
+          doc.text(lineChart.title, 105, yPosition, { align: 'center' });
+          
+          // Chart image
+          const imgWidth = 170;
+          const imgHeight = 100;
+          const xPosition = (doc.internal.pageSize.getWidth() - imgWidth) / 2;
+          
+          doc.addImage(lineChart.imgData, 'PNG', xPosition, yPosition + 10, imgWidth, imgHeight);
+
+          // Add trend analysis
+          yPosition += 130;
+          doc.setFontSize(12);
+          doc.text('Trend Analysis:', 20, yPosition);
+          yPosition += 15;
+          
+          doc.setFontSize(11);
+          const totalNormal = dashboardStats.total_users - dashboardStats.users_with_possible_disease;
+          const diseaseRate = ((dashboardStats.users_with_possible_disease / dashboardStats.total_users) * 100).toFixed(1);
+          
+          doc.text(`• Overall Health Rate: ${((totalNormal / dashboardStats.total_users) * 100).toFixed(1)}%`, 30, yPosition);
+          yPosition += 10;
+          doc.text(`• Disease Detection Rate: ${diseaseRate}%`, 30, yPosition);
+          yPosition += 10;
+          doc.text(`• System Confidence: ${dashboardStats.average_confidence}%`, 30, yPosition);
+        }
+      }
+
+      // Capture and add pie chart
+      if (pieChartRef.current) {
+        const pieChart = await captureChart(pieChartRef, 'Abnormal Results Distribution');
+        
+        if (pieChart && pieChart.imgData) {
+          // Add new page for pie chart
+          doc.addPage();
+          yPosition = 20;
+
+          // Chart title
+          doc.setFontSize(16);
+          doc.setTextColor(0, 0, 0);
+          doc.text(pieChart.title, 105, yPosition, { align: 'center' });
+          
+          // Chart image
+          const imgWidth = 150;
+          const imgHeight = 110;
+          const xPosition = (doc.internal.pageSize.getWidth() - imgWidth) / 2;
+          
+          doc.addImage(pieChart.imgData, 'PNG', xPosition, yPosition + 10, imgWidth, imgHeight);
+
+          // Add distribution analysis
+          yPosition += 140;
+          doc.setFontSize(12);
+          doc.text('Distribution Analysis:', 20, yPosition);
+          yPosition += 15;
+          
+          doc.setFontSize(11);
+          const diseaseBreakdown = dashboardStats.disease_breakdown || {};
+          const total = dashboardStats.total_users;
+          
+          if (total > 0) {
+            const normalPercentage = (((total - dashboardStats.users_with_possible_disease) / total) * 100).toFixed(1);
+            const eyeTrackingPercentage = ((diseaseBreakdown.eye_tracking_abnormal / total) * 100).toFixed(1);
+            const colorblindPercentage = ((diseaseBreakdown.colorblindness_abnormal / total) * 100).toFixed(1);
+            const eyeScanPercentage = ((diseaseBreakdown.eye_scan_abnormal / total) * 100).toFixed(1);
+            
+            doc.text(`• Normal Results: ${normalPercentage}%`, 30, yPosition);
+            yPosition += 10;
+            doc.text(`• Possible Disease: ${eyeTrackingPercentage}%`, 30, yPosition);
+            yPosition += 10;
+            doc.text(`• Colorblind Results: ${colorblindPercentage}%`, 30, yPosition);
+            yPosition += 10;
+            doc.text(`• Abnormal Results: ${eyeScanPercentage}%`, 30, yPosition);
+          }
+        }
+      }
+
+      // Add insights and recommendations page
+      doc.addPage();
+      yPosition = 20;
+
+      doc.setFontSize(16);
+      doc.text('Key Insights & Recommendations', 105, yPosition, { align: 'center' });
+      yPosition += 20;
+
+      doc.setFontSize(14);
+      doc.text('System Performance:', 20, yPosition);
+      yPosition += 15;
+
+      doc.setFontSize(11);
+      const insights = [
+        `Total system utilization: ${dashboardStats.total_tests} tests across ${dashboardStats.total_users} users`,
+        `Detection efficiency: ${((dashboardStats.users_with_possible_disease / dashboardStats.total_tests) * 100).toFixed(1)}% abnormality rate`,
+        `System reliability: ${dashboardStats.average_confidence}% average confidence`,
+        `Most effective test: ${getMostEffectiveTest()}`,
+        `Health screening coverage: ${((dashboardStats.total_users / (dashboardStats.total_users + 100)) * 100).toFixed(1)}% population reach`
+      ];
+
+      insights.forEach(insight => {
+        doc.text(`• ${insight}`, 30, yPosition);
+        yPosition += 10;
+      });
+
+      yPosition += 10;
+      doc.setFontSize(14);
+      doc.text('Recommendations:', 20, yPosition);
+      yPosition += 15;
+
+      doc.setFontSize(11);
+      const recommendations = [
+        'Continue monitoring monthly trends for pattern recognition',
+        'Focus on early detection programs for high-risk populations',
+        'Enhance system confidence through algorithm improvements',
+        'Expand screening programs to reach more users',
+        'Implement follow-up protocols for abnormal results'
+      ];
+
+      recommendations.forEach(rec => {
+        doc.text(`• ${rec}`, 30, yPosition);
+        yPosition += 10;
+      });
+
+      // Footer on all pages
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+        doc.text('OptiScan Dashboard Analytics', 105, 285, { align: 'center' });
+      }
+
+      // Save PDF
+      const fileName = `optiscan-dashboard-analytics-${new Date().getTime()}.pdf`;
+      doc.save(fileName);
+
+      toast.success('Dashboard Analytics PDF generated successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Error generating PDF report');
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
+  const getMostEffectiveTest = () => {
+    const testBreakdown = dashboardStats.test_breakdown || {};
+    const testTypes = {
+      'Colorblindness Tests': testBreakdown.colorblindness_tests || 0,
+      'Eye Test Sessions': testBreakdown.eye_test_sessions || 0,
+      'Eye Scans': testBreakdown.eye_scans || 0
+    };
+    
+    return Object.keys(testTypes).reduce((a, b) => testTypes[a] > testTypes[b] ? a : b);
   };
 
   // Filter and sort recent tests
@@ -128,6 +382,7 @@ export default function Dashboard() {
       year: 'numeric'
     });
   };
+
   const getLineChartData = () => {
     if (!monthlyData || Object.keys(monthlyData).length === 0) {
       return { labels: [], datasets: [] };
@@ -304,30 +559,68 @@ export default function Dashboard() {
   return (
     <AdminLayout>
       <div className="dashboard-container">
+        {/* Header with PDF Export */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '30px',
+          padding: '20px',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <h1 style={{
+            margin: 0,
+            fontSize: '32px',
+            fontWeight: '700',
+            color: '#2c3e50',
+            letterSpacing: '-0.5px'
+          }}>Dashboard</h1>
+          <button
+            onClick={generateDashboardPDF}
+            disabled={generatingPDF}
+            style={{
+              backgroundColor: generatingPDF ? '#b0b0b0' : '#4ECDC4',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: generatingPDF ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.3s ease',
+              boxShadow: generatingPDF ? 'none' : '0 2px 8px rgba(78, 205, 196, 0.3)',
+              minWidth: 'fit-content',
+              height: '44px'
+            }}
+            onMouseEnter={(e) => {
+              if (!generatingPDF) {
+                e.target.style.backgroundColor = '#45B7B8';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 4px 12px rgba(78, 205, 196, 0.4)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!generatingPDF) {
+                e.target.style.backgroundColor = '#4ECDC4';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 2px 8px rgba(78, 205, 196, 0.3)';
+              }
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>
+              {generatingPDF ? '⏳' : '📊'}
+            </span>
+            {generatingPDF ? 'Generating PDF...' : 'Export Analytics to PDF'}
+          </button>
+        </div>
 
         {/* Main Content */}
         <div className="dashboard-content">
-          {/* Charts Row */}
-          {/* <div className="charts-row">
-            <div className="chart-card line-chart-card">
-              <div className="chart-header">
-                <h3>Monthly Trends Analysis</h3>
-              </div>
-              <div className="chart-container">
-                <Line data={getLineChartData()} options={chartOptions} />
-              </div>
-            </div>
-            
-            <div className="chart-card pie-chart-card">
-              <div className="chart-header">
-                <h3>Abnormal Results Distribution</h3>
-              </div>
-              <div className="chart-container">
-                <Pie data={getPieChartData()} options={pieOptions} />
-              </div>
-            </div>
-          </div> */}
-
           {/* Stats Cards Row */}
           <div className="stats-row">
             <div className="stat-card total-users">
@@ -366,7 +659,11 @@ export default function Dashboard() {
                 <h3>Monthly Trends Analysis</h3>
               </div>
               <div className="chart-container">
-                <Line data={getLineChartData()} options={chartOptions} />
+                <Line 
+                  ref={lineChartRef}
+                  data={getLineChartData()} 
+                  options={chartOptions} 
+                />
               </div>
             </div>
 
@@ -375,89 +672,15 @@ export default function Dashboard() {
                 <h3>Abnormal Results Distribution</h3>
               </div>
               <div className="chart-container">
-                <Pie data={getPieChartData()} options={pieOptions} />
+                <Pie 
+                  ref={pieChartRef}
+                  data={getPieChartData()} 
+                  options={pieOptions} 
+                />
               </div>
             </div>
           </div>
-
-          {/* Recent Tests Table */}
-          {/* <div className="table-section">
-            <div className="table-header">
-              <h2>Recent Test Results</h2>
-              <div className="table-controls">
-                <div className="search-container">
-                  <input
-                    type="text"
-                    placeholder="Search tests..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="search-input"
-                  />
-                  <span className="search-icon">🔍</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="table-container">
-              <table className="recent-tests-table">
-                <thead>
-                  <tr>
-                    <th onClick={() => handleSort('email')} className="sortable">
-                      Email {sortConfig.key === 'email' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th onClick={() => handleSort('test_type')} className="sortable">
-                      Test Type {sortConfig.key === 'test_type' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th onClick={() => handleSort('result')} className="sortable">
-                      Result {sortConfig.key === 'result' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th onClick={() => handleSort('date')} className="sortable">
-                      Date {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentItems.map((test, index) => (
-                    <tr key={index}>
-                      <td>{test.email}</td>
-                      <td>{test.test_type}</td>
-                      <td>
-                        <span className={`result-badge ${test.result.toLowerCase().replace(/\s+/g, '-')}`}>
-                          {test.result}
-                        </span>
-                      </td>
-                      <td>{formatDate(test.date)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="pagination">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="pagination-btn"
-              >
-                Previous
-              </button>
-
-              <div className="pagination-info">
-                Page {currentPage} of {totalPages} ({sortedTests.length} total tests)
-              </div>
-
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="pagination-btn"
-              >
-                Next
-              </button>
-            </div>
-          </div> */}
         </div>
-
-
       </div>
     </AdminLayout>
   );

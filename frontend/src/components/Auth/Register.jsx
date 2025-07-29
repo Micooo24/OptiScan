@@ -14,10 +14,12 @@ import {
   IconButton,
   InputAdornment
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material'; // Add these imports
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import axios from 'axios';
 import BASE_URL from '../../common/baseURL';
 import LogoImage from '../../assets/logo.png';
+import { Formik, Form } from 'formik';
+import * as Yup from 'yup';
 
 const genders = [
   { value: '', label: 'Select gender' },
@@ -25,83 +27,27 @@ const genders = [
   { value: 'female', label: 'Female' }
 ];
 
+const validationSchema = Yup.object({
+  username: Yup.string().required('Username is required').min(3, 'At least 3 characters'),
+  email: Yup.string().email('Invalid email').required('Email is required'),
+  password: Yup.string().required('Password is required').min(6, 'At least 6 characters'),
+  age: Yup.number().typeError('Age must be a number').required('Age is required').min(1).max(150),
+  gender: Yup.string().oneOf(['male', 'female'], 'Select gender').required('Gender is required'),
+});
+
 function Register() {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    age: '',
-    gender: '',
-    img: null
-  });
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [acceptTerms, setAcceptTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === 'file') {
-      setFormData({ ...formData, img: files[0] });
-      setPreview(files[0] ? URL.createObjectURL(files[0]) : null);
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    if (!formData.username || !formData.email || !formData.password || !formData.age) {
-      setError('Please fill in all required fields');
-      setLoading(false);
-      return;
-    }
-    if (!acceptTerms) {
-      setError('You must accept the terms & conditions');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('username', formData.username);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('password', formData.password);
-      formDataToSend.append('age', formData.age);
-      if (formData.gender) formDataToSend.append('gender', formData.gender);
-      if (formData.img) formDataToSend.append('img', formData.img);
-
-      await axios.post(`${BASE_URL}/api/users/register`, formDataToSend, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      alert('Registration successful!');
-      setFormData({
-        username: '',
-        email: '',
-        password: '',
-        age: '',
-        gender: '',
-        img: null
-      });
-      setPreview(null);
-      setAcceptTerms(false);
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed');
-    }
-    setLoading(false);
-  };
 
   return (
     <Box sx={{
-     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #e0f2fe 0%, #b4c9d7 100%)', // <-- use light blue!
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #e0f2fe 0%, #b4c9d7 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
     }}>
       <Paper elevation={0} sx={{
         display: 'flex',
@@ -140,109 +86,174 @@ function Register() {
             </Box>
           )}
 
-          <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-            <TextField
-              label="Username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              fullWidth
-              margin="normal"
-              required
-              autoFocus
-            />
-            <TextField
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              fullWidth
-              margin="normal"
-              required
-            />
-            <TextField
-              label="Age"
-              name="age"
-              type="number"
-              value={formData.age}
-              onChange={handleChange}
-              fullWidth
-              margin="normal"
-              required
-              inputProps={{ min: 1, max: 150 }}
-            />
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="gender-label">Gender</InputLabel>
-              <Select
-                labelId="gender-label"
-                name="gender"
-                value={formData.gender}
-                label="Gender"
-                onChange={handleChange}
-              >
-                {genders.map((g) => (
-                  <MenuItem key={g.value} value={g.value}>{g.label}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Box sx={{ mt: 2, mb: 2 }}>
-              <Typography variant="body2" sx={{ mb: 1 }}>Profile Image</Typography>
-              <Button
-                variant="outlined"
-                component="label"
-                fullWidth
-                sx={{ mb: 1 }}
-              >
-                Upload Image
-                <input
-                  type="file"
-                  name="img"
-                  accept="image/*"
-                  hidden
+          <Formik
+            initialValues={{
+              username: '',
+              email: '',
+              password: '',
+              age: '',
+              gender: '',
+              img: null
+            }}
+            validationSchema={validationSchema}
+            onSubmit={async (values, { setSubmitting, resetForm }) => {
+              setError('');
+              setLoading(true);
+              try {
+                const formDataToSend = new FormData();
+                formDataToSend.append('username', values.username);
+                formDataToSend.append('email', values.email);
+                formDataToSend.append('password', values.password);
+                formDataToSend.append('age', values.age);
+                formDataToSend.append('gender', values.gender);
+                if (values.img) formDataToSend.append('img', values.img);
+
+                await axios.post(`${BASE_URL}/api/users/register`, formDataToSend, {
+                  headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                alert('Registration successful!');
+                resetForm();
+                setPreview(null);
+              } catch (err) {
+                setError(err.response?.data?.detail || 'Registration failed');
+              }
+              setLoading(false);
+              setSubmitting(false);
+            }}
+          >
+            {({
+              values,
+              errors,
+              touched,
+              handleChange,
+              handleBlur,
+              setFieldValue,
+              isSubmitting
+            }) => (
+              <Form style={{ width: '100%' }}>
+                <TextField
+                  label="Username"
+                  name="username"
+                  value={values.username}
                   onChange={handleChange}
+                  onBlur={handleBlur}
+                  fullWidth
+                  margin="normal"
+                  required
+                  autoFocus
+                  error={Boolean(touched.username && errors.username)}
+                  helperText={touched.username && errors.username}
                 />
-              </Button>
-              {preview && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
-                  <Avatar src={preview} sx={{ width: 56, height: 56 }} />
+                <TextField
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={values.email}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  fullWidth
+                  margin="normal"
+                  required
+                  error={Boolean(touched.email && errors.email)}
+                  helperText={touched.email && errors.email}
+                />
+                <TextField
+                  label="Age"
+                  name="age"
+                  type="number"
+                  value={values.age}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  fullWidth
+                  margin="normal"
+                  required
+                  inputProps={{ min: 1, max: 150 }}
+                  error={Boolean(touched.age && errors.age)}
+                  helperText={touched.age && errors.age}
+                />
+                <FormControl fullWidth margin="normal" error={Boolean(touched.gender && errors.gender)}>
+                  <InputLabel id="gender-label">Gender</InputLabel>
+                  <Select
+                    labelId="gender-label"
+                    name="gender"
+                    value={values.gender}
+                    label="Gender"
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                  >
+                    {genders.map((g) => (
+                      <MenuItem key={g.value} value={g.value}>{g.label}</MenuItem>
+                    ))}
+                  </Select>
+                  {touched.gender && errors.gender && (
+                    <Typography variant="caption" color="error">{errors.gender}</Typography>
+                  )}
+                </FormControl>
+                <Box sx={{ mt: 2, mb: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Profile Image</Typography>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    fullWidth
+                    sx={{ mb: 1 }}
+                  >
+                    Upload Image
+                    <input
+                      type="file"
+                      name="img"
+                      accept="image/*"
+                      hidden
+                      onChange={e => {
+                        setFieldValue('img', e.currentTarget.files[0]);
+                        setPreview(e.currentTarget.files[0] ? URL.createObjectURL(e.currentTarget.files[0]) : null);
+                      }}
+                    />
+                  </Button>
+                  {preview && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
+                      <Avatar src={preview} sx={{ width: 56, height: 56 }} />
+                    </Box>
+                  )}
                 </Box>
-              )}
-            </Box>
-              <TextField
-              label="Password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              value={formData.password}
-              onChange={handleChange}
-              fullWidth
-              margin="normal"
-              required
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              sx={{ mt: 1, py: 1.5, fontWeight: 600, fontSize: 16, bgcolor: '#5E81AC' }}
-              disabled={loading}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Sign up'}
-            </Button>
-          </form>
+                <TextField
+                  label="Password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={values.password}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  fullWidth
+                  margin="normal"
+                  required
+                  error={Boolean(touched.password && errors.password)}
+                  helperText={touched.password && errors.password}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  sx={{ mt: 1, py: 1.5, fontWeight: 600, fontSize: 16, bgcolor: '#5E81AC' }}
+                  disabled={loading || isSubmitting}
+                >
+                  {loading ? <CircularProgress size={24} /> : 'Sign up'}
+                </Button>
+              </Form>
+            )}
+          </Formik>
           <Box sx={{ mt: 3, textAlign: 'center', color: '#5E81AC' }}>
             <Typography variant="body2">
               Already have an account? <a href="/login" style={{ color: '#5E81AC', textDecoration: 'underline' }}>Sign in</a>
@@ -267,7 +278,6 @@ function Register() {
           <Typography variant="body1" sx={{ mb: 3, textAlign: 'center', maxWidth: 320 }}>
             Join now and experience seamless eye health management. Your vision matters!
           </Typography>
-          {/* Replace placeholder with image */}
           <Box sx={{
             width: 350,
             height: 160,
